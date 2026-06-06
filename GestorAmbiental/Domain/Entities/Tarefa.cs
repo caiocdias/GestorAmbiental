@@ -7,6 +7,7 @@ namespace GestorAmbiental.Domain.Entities;
 
 public sealed class Tarefa : Entity
 {
+    public string Descricao { get; set; } = string.Empty;
     public int ProjetoId { get; set; }
     public int? ClienteId { get; set; }
     public DateTime DataInicio { get; set; } = DateTime.Today;
@@ -22,4 +23,7 @@ public sealed class Tarefa : Entity
 
     [JsonIgnore]
     public string SituacaoDisplay => EnumDisplay.GetName(Situacao);
+
+    [JsonIgnore]
+    public string SituacaoPrazoDisplay => PrazoDisplay.GetName(Situacao, DataPrevisao, DataFinal);
 }

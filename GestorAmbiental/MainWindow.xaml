@@ -246,6 +246,7 @@
                                     <DataGridTextColumn Header="Tipo" Binding="{Binding TipoAmbientalDisplay}" Width="2*" />
                                     <DataGridTextColumn Header="Situacao" Binding="{Binding SituacaoDisplay}" Width="*" />
                                     <DataGridTextColumn Header="Previsao fim" Binding="{Binding DataPrevistaFim, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
+                                    <DataGridTextColumn Header="Prazo" Binding="{Binding SituacaoPrazoDisplay}" Width="*" />
                                     <DataGridTextColumn Header="Valor contratado" Binding="{Binding ValorContratado, StringFormat={}{0:C}}" Width="*" />
                                     <DataGridTextColumn Header="Soma pagamentos" Binding="{Binding ValorPago, StringFormat={}{0:C}}" Width="*" />
                                 </DataGrid.Columns>
@@ -499,14 +500,20 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Margin="0,0,8,0">
                                         <TextBlock Text="Inicio *" Style="{StaticResource FormLabelStyle}" />
                                         <DatePicker x:Name="ProjetoDataInicioPicker" />
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1">
+                                    <StackPanel Grid.Column="1" Margin="0,0,8,0">
                                         <TextBlock Text="Previsao de fim" Style="{StaticResource FormLabelStyle}" />
                                         <DatePicker x:Name="ProjetoDataPrevistaFimPicker" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Data final" Style="{StaticResource FormLabelStyle}" />
+                                        <DatePicker x:Name="ProjetoDataFinalPicker"
+                                                    SelectedDateChanged="ProjetoDataFinalPicker_SelectedDateChanged" />
                                     </StackPanel>
                                 </Grid>
 
@@ -649,6 +656,8 @@
                                     <DataGridTextColumn Header="Tipo" Binding="{Binding TipoAmbientalDisplay}" Width="1.7*" />
                                     <DataGridTextColumn Header="Situacao" Binding="{Binding SituacaoDisplay}" Width="1.1*" />
                                     <DataGridTextColumn Header="Previsao fim" Binding="{Binding DataPrevistaFim, StringFormat={}{0:dd/MM/yyyy}}" Width="1.1*" />
+                                    <DataGridTextColumn Header="Final" Binding="{Binding DataFinal, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
+                                    <DataGridTextColumn Header="Prazo" Binding="{Binding SituacaoPrazoDisplay}" Width="1.1*" />
                                     <DataGridTextColumn Header="Valor contratado" Binding="{Binding ValorContratado, StringFormat={}{0:C}}" Width="1.2*" />
                                     <DataGridTextColumn Header="Soma pagamentos" Binding="{Binding ValorPago, StringFormat={}{0:C}}" Width="1.2*" />
                                     <DataGridTextColumn Header="Falta receber" Binding="{Binding SaldoPendente, StringFormat={}{0:C}}" Width="1.1*" />
@@ -687,6 +696,13 @@
                                                TextWrapping="Wrap" />
                                 </Border>
 
+                                <TextBlock Text="Descricao *" Style="{StaticResource FormLabelStyle}" />
+                                <TextBox x:Name="TarefaDescricaoTextBox"
+                                         Height="72"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto" />
+
                                 <TextBlock Text="Projeto *" Style="{StaticResource FormLabelStyle}" />
                                 <ComboBox x:Name="TarefaProjetoComboBox"
                                           DisplayMemberPath="Nome"
@@ -708,7 +724,8 @@
                                 <DatePicker x:Name="TarefaDataPrevisaoPicker" />
 
                                 <TextBlock Text="Data final" Style="{StaticResource FormLabelStyle}" />
-                                <DatePicker x:Name="TarefaDataFinalPicker" />
+                                <DatePicker x:Name="TarefaDataFinalPicker"
+                                            SelectedDateChanged="TarefaDataFinalPicker_SelectedDateChanged" />
 
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
                                     <Button Content="Salvar" Click="SalvarTarefaButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
@@ -727,6 +744,10 @@
                                            FontWeight="SemiBold"
                                            Foreground="#183D3A" />
                                 <WrapPanel Margin="0,12,0,0">
+                                    <StackPanel Width="180" Margin="0,0,8,8">
+                                        <TextBlock Text="Descricao" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="TarefaFiltroDescricaoTextBox" TextChanged="TarefaFiltro_TextChanged" />
+                                    </StackPanel>
                                     <StackPanel Width="170" Margin="0,0,8,8">
                                         <TextBlock Text="Projeto" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
                                         <TextBox x:Name="TarefaFiltroProjetoTextBox" TextChanged="TarefaFiltro_TextChanged" />
@@ -768,12 +789,14 @@
                                       SelectionChanged="TarefasDataGrid_SelectionChanged">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60" />
+                                    <DataGridTextColumn Header="Descricao" Binding="{Binding Descricao}" Width="2*" />
                                     <DataGridTextColumn Header="Projeto" Binding="{Binding ProjetoDisplay}" Width="1.7*" />
                                     <DataGridTextColumn Header="Cliente" Binding="{Binding ClienteDisplay}" Width="1.4*" />
                                     <DataGridTextColumn Header="Situacao" Binding="{Binding SituacaoDisplay}" Width="1.1*" />
                                     <DataGridTextColumn Header="Inicio" Binding="{Binding DataInicio, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
                                     <DataGridTextColumn Header="Previsao" Binding="{Binding DataPrevisao, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
                                     <DataGridTextColumn Header="Final" Binding="{Binding DataFinal, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
+                                    <DataGridTextColumn Header="Prazo" Binding="{Binding SituacaoPrazoDisplay}" Width="*" />
                                 </DataGrid.Columns>
                             </DataGrid>
                         </DockPanel>

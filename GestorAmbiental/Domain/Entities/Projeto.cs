@@ -11,6 +11,7 @@ public sealed class Projeto : Entity
     public string Descricao { get; set; } = string.Empty;
     public DateTime DataInicio { get; set; } = DateTime.Today;
     public DateTime? DataPrevistaFim { get; set; }
+    public DateTime? DataFinal { get; set; }
     public decimal ValorContratado { get; set; }
     public decimal AreaAfetadaM2 { get; set; }
     public string DescricaoImpactoAmbiental { get; set; } = string.Empty;
@@ -31,6 +32,9 @@ public sealed class Projeto : Entity
 
     [JsonIgnore]
     public string SituacaoDisplay => EnumDisplay.GetName(Situacao);
+
+    [JsonIgnore]
+    public string SituacaoPrazoDisplay => PrazoDisplay.GetName(Situacao, DataPrevistaFim, DataFinal);
 
     [JsonIgnore]
     public string ClientesAssociadosDisplay { get; set; } = string.Empty;

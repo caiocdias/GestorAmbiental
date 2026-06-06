@@ -8,6 +8,7 @@ Aplicativo desktop em WPF para gerenciar clientes, projetos ambientais, tarefas 
 - Cadastro, edicao, exclusao e filtros de projetos ambientais.
 - Associacao de varios clientes a um projeto e de varios projetos a um cliente.
 - Cadastro, edicao, exclusao e filtros de tarefas vinculadas a um projeto e, opcionalmente, a um cliente.
+- Acompanhamento de prazo em projetos e tarefas, com data prevista, data final e situacao calculada.
 - Lancamento, edicao, exclusao e filtros de pagamentos.
 - Restricao para impedir remover um cliente de um projeto quando ja existe pagamento vinculado ao par cliente/projeto.
 - Calculo de valores contratados, pagamentos recebidos e falta a receber.

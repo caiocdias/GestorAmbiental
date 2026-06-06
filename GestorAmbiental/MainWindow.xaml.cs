@@ -103,12 +103,12 @@ public partial class MainWindow : Window
         ClienteFiltroSituacaoComboBox.ItemsSource = EnumDisplay.GetFilterOptions<SituacaoCliente>("Todas");
         ClienteFiltroSituacaoComboBox.SelectedIndex = 0;
         ProjetoTipoComboBox.ItemsSource = EnumDisplay.GetOptions<TipoProjetoAmbiental>();
-        ProjetoSituacaoComboBox.ItemsSource = EnumDisplay.GetOptions<SituacaoProjeto>();
+        AtualizarOpcoesSituacaoProjetoPorDataFinal();
         ProjetoFiltroTipoComboBox.ItemsSource = EnumDisplay.GetFilterOptions<TipoProjetoAmbiental>("Todos");
         ProjetoFiltroTipoComboBox.SelectedIndex = 0;
         ProjetoFiltroSituacaoComboBox.ItemsSource = EnumDisplay.GetFilterOptions<SituacaoProjeto>("Todas");
         ProjetoFiltroSituacaoComboBox.SelectedIndex = 0;
-        TarefaSituacaoComboBox.ItemsSource = EnumDisplay.GetOptions<SituacaoTarefa>();
+        AtualizarOpcoesSituacaoTarefaPorDataFinal();
         TarefaFiltroSituacaoComboBox.ItemsSource = EnumDisplay.GetFilterOptions<SituacaoTarefa>("Todas");
         TarefaFiltroSituacaoComboBox.SelectedIndex = 0;
         PagamentoFormaComboBox.ItemsSource = EnumDisplay.GetOptions<FormaPagamento>();
@@ -461,15 +461,31 @@ public partial class MainWindow : Window
                 return;
             }
 
+            var dataInicio = ProjetoDataInicioPicker.SelectedDate ?? DateTime.Today;
+            var dataFinal = ProjetoDataFinalPicker.SelectedDate;
+
+            if (dataFinal is not null && dataFinal.Value.Date < dataInicio.Date)
+            {
+                MostrarErroProjeto("A data final nao pode ser anterior a data de inicio.");
+                return;
+            }
+
+            var situacaoProjeto = ObterValorEnum(ProjetoSituacaoComboBox, SituacaoProjeto.PLANEJADO);
+            if (dataFinal is not null && situacaoProjeto != SituacaoProjeto.CANCELADO)
+            {
+                situacaoProjeto = SituacaoProjeto.CONCLUIDO;
+            }
+
             projeto.Nome = ProjetoNomeTextBox.Text.Trim();
             projeto.Descricao = ProjetoDescricaoTextBox.Text.Trim();
             projeto.TipoAmbiental = ObterValorEnum(ProjetoTipoComboBox, TipoProjetoAmbiental.OUTROS);
-            projeto.Situacao = ObterValorEnum(ProjetoSituacaoComboBox, SituacaoProjeto.PLANEJADO);
+            projeto.Situacao = situacaoProjeto;
             projeto.ValorContratado = valorContratado;
             projeto.AreaAfetadaM2 = areaAfetada;
             projeto.DescricaoImpactoAmbiental = ProjetoImpactoTextBox.Text.Trim();
-            projeto.DataInicio = ProjetoDataInicioPicker.SelectedDate ?? DateTime.Today;
+            projeto.DataInicio = dataInicio.Date;
             projeto.DataPrevistaFim = ProjetoDataPrevistaFimPicker.SelectedDate;
+            projeto.DataFinal = dataFinal?.Date;
             projeto.Endereco = endereco;
             projeto.Clientes = CriarVinculosProjetoClientes(projeto.Id, clientesSelecionadosIds, vinculosAnteriores);
 
@@ -603,9 +619,19 @@ public partial class MainWindow : Window
         AplicarMascaraCepProjeto();
     }
 
+    private void ProjetoDataFinalPicker_SelectedDateChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        AtualizarOpcoesSituacaoProjetoPorDataFinal(ProjetoDataFinalPicker.SelectedDate is not null);
+    }
+
     private void TarefaProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         AtualizarOpcoesClienteDaTarefa();
+    }
+
+    private void TarefaDataFinalPicker_SelectedDateChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        AtualizarOpcoesSituacaoTarefaPorDataFinal(TarefaDataFinalPicker.SelectedDate is not null);
     }
 
     private async void SalvarTarefaButton_Click(object sender, RoutedEventArgs e)
@@ -613,6 +639,13 @@ public partial class MainWindow : Window
         if (_dataFolderProvider.DataFolderPath is null)
         {
             MostrarErroTarefa("Escolha uma pasta de dados antes de salvar a tarefa.");
+            return;
+        }
+
+        var descricao = TarefaDescricaoTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(descricao))
+        {
+            MostrarErroTarefa("Informe a descricao da tarefa.");
             return;
         }
 
@@ -663,9 +696,16 @@ public partial class MainWindow : Window
         {
             var editando = _tarefaSelecionada is not null;
             var tarefa = _tarefaSelecionada ?? new Tarefa();
+            var situacaoTarefa = ObterValorEnum(TarefaSituacaoComboBox, SituacaoTarefa.PLANEJADO);
+            if (dataFinal is not null && situacaoTarefa != SituacaoTarefa.CANCELADO)
+            {
+                situacaoTarefa = SituacaoTarefa.CONCLUIDO;
+            }
+
+            tarefa.Descricao = descricao;
             tarefa.ProjetoId = projeto.Id;
             tarefa.ClienteId = clienteId;
-            tarefa.Situacao = ObterValorEnum(TarefaSituacaoComboBox, SituacaoTarefa.PLANEJADO);
+            tarefa.Situacao = situacaoTarefa;
             tarefa.DataInicio = dataInicio.Date;
             tarefa.DataPrevisao = dataPrevisao.Date;
             tarefa.DataFinal = dataFinal?.Date;
@@ -741,6 +781,7 @@ public partial class MainWindow : Window
 
     private void LimparFiltrosTarefasButton_Click(object sender, RoutedEventArgs e)
     {
+        TarefaFiltroDescricaoTextBox.Text = string.Empty;
         TarefaFiltroProjetoTextBox.Text = string.Empty;
         TarefaFiltroClienteTextBox.Text = string.Empty;
         TarefaFiltroInicioTextBox.Text = string.Empty;
@@ -966,12 +1007,17 @@ public partial class MainWindow : Window
         ProjetoNomeTextBox.Text = projeto.Nome;
         ProjetoDescricaoTextBox.Text = projeto.Descricao;
         ProjetoTipoComboBox.SelectedValue = projeto.TipoAmbiental;
-        ProjetoSituacaoComboBox.SelectedValue = projeto.Situacao;
         DefinirValorProjeto(projeto.ValorContratado);
         ProjetoAreaTextBox.Text = projeto.AreaAfetadaM2.ToString("N2", CultureInfo.CurrentCulture);
         ProjetoImpactoTextBox.Text = projeto.DescricaoImpactoAmbiental;
         ProjetoDataInicioPicker.SelectedDate = projeto.DataInicio;
         ProjetoDataPrevistaFimPicker.SelectedDate = projeto.DataPrevistaFim;
+        ProjetoDataFinalPicker.SelectedDate = projeto.DataFinal;
+        AtualizarOpcoesSituacaoProjetoPorDataFinal();
+        ProjetoSituacaoComboBox.SelectedValue = projeto.DataFinal is not null
+            && projeto.Situacao is not (SituacaoProjeto.CONCLUIDO or SituacaoProjeto.CANCELADO)
+                ? SituacaoProjeto.CONCLUIDO
+                : projeto.Situacao;
 
         SelecionarClientesDoProjeto(projeto);
 
@@ -1001,6 +1047,9 @@ public partial class MainWindow : Window
         ProjetoImpactoTextBox.Text = string.Empty;
         ProjetoDataInicioPicker.SelectedDate = DateTime.Today;
         ProjetoDataPrevistaFimPicker.SelectedDate = null;
+        ProjetoDataFinalPicker.SelectedDate = null;
+        AtualizarOpcoesSituacaoProjetoPorDataFinal();
+        ProjetoSituacaoComboBox.SelectedValue = SituacaoProjeto.PLANEJADO;
         ProjetoCepTextBox.Text = string.Empty;
         LimparCamposEnderecoProjeto("Brasil");
     }
@@ -1019,15 +1068,20 @@ public partial class MainWindow : Window
     {
         TarefaFormTitleTextBlock.Text = $"Editando tarefa #{tarefa.Id}";
         TarefaEditWarningBorder.Visibility = Visibility.Visible;
+        TarefaDescricaoTextBox.Text = tarefa.Descricao;
         TarefaProjetoComboBox.SelectedItem = _projetos.FirstOrDefault(projeto => projeto.Id == tarefa.ProjetoId);
         AtualizarOpcoesClienteDaTarefa();
         TarefaClienteComboBox.SelectedItem = tarefa.ClienteId is null
             ? _tarefaClientesDisponiveis.FirstOrDefault(cliente => cliente.Id == 0)
             : _tarefaClientesDisponiveis.FirstOrDefault(cliente => cliente.Id == tarefa.ClienteId.Value);
-        TarefaSituacaoComboBox.SelectedValue = tarefa.Situacao;
         TarefaDataInicioPicker.SelectedDate = tarefa.DataInicio;
         TarefaDataPrevisaoPicker.SelectedDate = tarefa.DataPrevisao;
         TarefaDataFinalPicker.SelectedDate = tarefa.DataFinal;
+        AtualizarOpcoesSituacaoTarefaPorDataFinal();
+        TarefaSituacaoComboBox.SelectedValue = tarefa.DataFinal is not null
+            && tarefa.Situacao is not (SituacaoTarefa.CONCLUIDO or SituacaoTarefa.CANCELADO)
+                ? SituacaoTarefa.CONCLUIDO
+                : tarefa.Situacao;
     }
 
     private void LimparFormularioTarefa()
@@ -1036,13 +1090,15 @@ public partial class MainWindow : Window
         TarefasDataGrid.SelectedItem = null;
         TarefaFormTitleTextBlock.Text = "Cadastro de tarefa";
         TarefaEditWarningBorder.Visibility = Visibility.Collapsed;
+        TarefaDescricaoTextBox.Text = string.Empty;
         TarefaProjetoComboBox.SelectedItem = null;
         AtualizarOpcoesClienteDaTarefa();
         TarefaClienteComboBox.SelectedItem = _tarefaClientesDisponiveis.FirstOrDefault(cliente => cliente.Id == 0);
-        TarefaSituacaoComboBox.SelectedValue = SituacaoTarefa.PLANEJADO;
         TarefaDataInicioPicker.SelectedDate = DateTime.Today;
         TarefaDataPrevisaoPicker.SelectedDate = DateTime.Today;
         TarefaDataFinalPicker.SelectedDate = null;
+        AtualizarOpcoesSituacaoTarefaPorDataFinal();
+        TarefaSituacaoComboBox.SelectedValue = SituacaoTarefa.PLANEJADO;
     }
 
     private void PreencherFormularioPagamento(Pagamento pagamento)
@@ -1221,7 +1277,8 @@ public partial class MainWindow : Window
 
         var situacaoFiltro = ObterValorFiltroEnum<SituacaoTarefa>(TarefaFiltroSituacaoComboBox);
 
-        return Contem(tarefa.ProjetoDisplay, TarefaFiltroProjetoTextBox.Text)
+        return Contem(tarefa.Descricao, TarefaFiltroDescricaoTextBox.Text)
+            && Contem(tarefa.ProjetoDisplay, TarefaFiltroProjetoTextBox.Text)
             && Contem(tarefa.ClienteDisplay, TarefaFiltroClienteTextBox.Text)
             && (situacaoFiltro is null || tarefa.Situacao == situacaoFiltro)
             && Contem(FormatarData(tarefa.DataInicio), TarefaFiltroInicioTextBox.Text)
@@ -1652,6 +1709,50 @@ public partial class MainWindow : Window
             vinculo.Papel = vinculo.Principal ? "Cliente principal" : "Cliente associado";
             vinculo.PercentualResponsabilidade = percentual;
         }
+    }
+
+    private void AtualizarOpcoesSituacaoProjetoPorDataFinal(bool definirConcluido = false)
+    {
+        var possuiDataFinal = ProjetoDataFinalPicker.SelectedDate is not null;
+        var situacaoAtual = ObterValorEnum(ProjetoSituacaoComboBox, SituacaoProjeto.PLANEJADO);
+        var opcoes = EnumDisplay.GetOptions<SituacaoProjeto>();
+
+        if (possuiDataFinal)
+        {
+            opcoes = opcoes
+                .Where(opcao => opcao.Value is SituacaoProjeto.CONCLUIDO or SituacaoProjeto.CANCELADO)
+                .ToArray();
+
+            if (definirConcluido || situacaoAtual is not (SituacaoProjeto.CONCLUIDO or SituacaoProjeto.CANCELADO))
+            {
+                situacaoAtual = SituacaoProjeto.CONCLUIDO;
+            }
+        }
+
+        ProjetoSituacaoComboBox.ItemsSource = opcoes;
+        ProjetoSituacaoComboBox.SelectedValue = situacaoAtual;
+    }
+
+    private void AtualizarOpcoesSituacaoTarefaPorDataFinal(bool definirConcluido = false)
+    {
+        var possuiDataFinal = TarefaDataFinalPicker.SelectedDate is not null;
+        var situacaoAtual = ObterValorEnum(TarefaSituacaoComboBox, SituacaoTarefa.PLANEJADO);
+        var opcoes = EnumDisplay.GetOptions<SituacaoTarefa>();
+
+        if (possuiDataFinal)
+        {
+            opcoes = opcoes
+                .Where(opcao => opcao.Value is SituacaoTarefa.CONCLUIDO or SituacaoTarefa.CANCELADO)
+                .ToArray();
+
+            if (definirConcluido || situacaoAtual is not (SituacaoTarefa.CONCLUIDO or SituacaoTarefa.CANCELADO))
+            {
+                situacaoAtual = SituacaoTarefa.CONCLUIDO;
+            }
+        }
+
+        TarefaSituacaoComboBox.ItemsSource = opcoes;
+        TarefaSituacaoComboBox.SelectedValue = situacaoAtual;
     }
 
     private void AtualizarOpcoesClienteDaTarefa()
