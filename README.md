@@ -10,6 +10,7 @@ Aplicativo desktop em WPF para gerenciar clientes, projetos ambientais, tarefas 
 - Cadastro, edicao, exclusao e filtros de tarefas vinculadas a um projeto e, opcionalmente, a um cliente.
 - Acompanhamento de prazo em projetos e tarefas, com data prevista, data final e situacao calculada.
 - Lancamento, edicao, exclusao e filtros de pagamentos.
+- Exportacao das tabelas filtradas de clientes, projetos, tarefas e pagamentos para arquivos XLSX.
 - Dashboard analitico com filtro por intervalo de datas, indicadores financeiros e operacionais.
 - Grafico de recebido acumulado por data de pagamento.
 - Graficos de prazo para projetos e tarefas ativos, separados por situacao calculada.
@@ -79,6 +80,7 @@ GestorAmbiental/
     Entities/             Entidades de negocio
     Enums/                Enumeracoes do dominio
   Infrastructure/
+    Export/               Exportacao de tabelas para XLSX
     ExternalServices/     Integracao com ViaCEP
     Persistence/          Persistencia em arquivos JSON
   App.xaml

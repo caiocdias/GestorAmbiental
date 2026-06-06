@@ -9,6 +9,7 @@ using System.Windows.Shapes;
 using GestorAmbiental.Domain.Display;
 using GestorAmbiental.Domain.Entities;
 using GestorAmbiental.Domain.Enums;
+using GestorAmbiental.Infrastructure.Export;
 using GestorAmbiental.Infrastructure.ExternalServices;
 using GestorAmbiental.Infrastructure.Persistence;
 using Microsoft.Win32;
@@ -415,6 +416,25 @@ public partial class MainWindow : Window
         _clientesView?.Refresh();
     }
 
+    private void ExportarClientesButton_Click(object sender, RoutedEventArgs e)
+    {
+        ExportarTabela(
+            "clientes",
+            "Clientes",
+            ObterItensVisiveis(_clientesView, _clientes),
+            [
+                new("ID", cliente => cliente.Id),
+                new("Nome", cliente => cliente.Nome),
+                new("Situacao", cliente => cliente.SituacaoDisplay),
+                new("Tipo doc.", cliente => cliente.TipoDocumentoPrincipalDisplay),
+                new("Documento", cliente => cliente.DocumentoPrincipalFormatado),
+                new("Email", cliente => cliente.EmailPrincipalEndereco),
+                new("Telefone", cliente => cliente.TelefonePrincipalFormatado),
+                new("Projetos associados", cliente => cliente.ProjetosAssociadosDisplay),
+                new("Cadastro", cliente => FormatarData(cliente.DataCadastro))
+            ]);
+    }
+
     private void ClienteDocumentoTipoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         AplicarMascaraDocumento();
@@ -634,6 +654,28 @@ public partial class MainWindow : Window
         _projetosView?.Refresh();
     }
 
+    private void ExportarProjetosButton_Click(object sender, RoutedEventArgs e)
+    {
+        ExportarTabela(
+            "projetos",
+            "Projetos",
+            ObterItensVisiveis(_projetosView, _projetos),
+            [
+                new("ID", projeto => projeto.Id),
+                new("Nome", projeto => projeto.Nome),
+                new("Tipo", projeto => projeto.TipoAmbientalDisplay),
+                new("Situacao", projeto => projeto.SituacaoDisplay),
+                new("Previsao fim", projeto => FormatarData(projeto.DataPrevistaFim)),
+                new("Final", projeto => FormatarData(projeto.DataFinal)),
+                new("Prazo", projeto => projeto.SituacaoPrazoDisplay),
+                new("Valor contratado", projeto => projeto.ValorContratado.ToString("C", RealCulture)),
+                new("Soma pagamentos", projeto => projeto.ValorPago.ToString("C", RealCulture)),
+                new("Falta receber", projeto => projeto.SaldoPendente.ToString("C", RealCulture)),
+                new("Clientes associados", projeto => projeto.ClientesAssociadosDisplay),
+                new("Cidade", projeto => projeto.Endereco.Cidade)
+            ]);
+    }
+
     private void ProjetoValorTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         AplicarMascaraMoedaProjeto();
@@ -822,6 +864,25 @@ public partial class MainWindow : Window
         _tarefasView?.Refresh();
     }
 
+    private void ExportarTarefasButton_Click(object sender, RoutedEventArgs e)
+    {
+        ExportarTabela(
+            "tarefas",
+            "Tarefas",
+            ObterItensVisiveis(_tarefasView, _tarefas),
+            [
+                new("ID", tarefa => tarefa.Id),
+                new("Descricao", tarefa => tarefa.Descricao),
+                new("Projeto", tarefa => tarefa.ProjetoDisplay),
+                new("Cliente", tarefa => tarefa.ClienteDisplay),
+                new("Situacao", tarefa => tarefa.SituacaoDisplay),
+                new("Inicio", tarefa => FormatarData(tarefa.DataInicio)),
+                new("Previsao", tarefa => FormatarData(tarefa.DataPrevisao)),
+                new("Final", tarefa => FormatarData(tarefa.DataFinal)),
+                new("Prazo", tarefa => tarefa.SituacaoPrazoDisplay)
+            ]);
+    }
+
     private void PagamentoProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         AtualizarOpcoesPagamentoPorAssociacao();
@@ -985,6 +1046,24 @@ public partial class MainWindow : Window
         PagamentoFiltroFormaComboBox.SelectedIndex = 0;
         PagamentoFiltroSituacaoComboBox.SelectedIndex = 0;
         _pagamentosView?.Refresh();
+    }
+
+    private void ExportarPagamentosButton_Click(object sender, RoutedEventArgs e)
+    {
+        ExportarTabela(
+            "pagamentos",
+            "Pagamentos",
+            ObterItensVisiveis(_pagamentosView, _pagamentos),
+            [
+                new("ID", pagamento => pagamento.Id),
+                new("Valor", pagamento => pagamento.ValorTotal.ToString("C", RealCulture)),
+                new("Forma", pagamento => pagamento.FormaPagamentoDisplay),
+                new("Situacao", pagamento => pagamento.SituacaoDisplay),
+                new("Pagamento", pagamento => FormatarData(pagamento.DataPagamento)),
+                new("Projeto", pagamento => pagamento.ProjetosAssociadosDisplay),
+                new("Cliente", pagamento => pagamento.ClientesAssociadosDisplay),
+                new("Observacao", pagamento => pagamento.Observacao)
+            ]);
     }
 
     private void PagamentoValorTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -1380,15 +1459,6 @@ public partial class MainWindow : Window
             var y = baseY - percentual * areaAltura;
             var valor = valorMaximo * i / 4M;
 
-            DashboardRecebidoLineCanvas.Children.Add(new Line
-            {
-                X1 = margemEsquerda,
-                X2 = margemEsquerda + areaLargura,
-                Y1 = y,
-                Y2 = y,
-                Stroke = DashboardGridBrush,
-                StrokeThickness = 1
-            });
             AdicionarTextoCanvas(
                 DashboardRecebidoLineCanvas,
                 valor.ToString("C0", RealCulture),
@@ -1403,6 +1473,7 @@ public partial class MainWindow : Window
             Stroke = DashboardLineBrush,
             StrokeThickness = 3
         };
+        var pontosRenderizados = new List<(Point Point, decimal Valor)>();
 
         foreach (var ponto in pontosAcumulados)
         {
@@ -1410,13 +1481,15 @@ public partial class MainWindow : Window
                 ? margemEsquerda + areaLargura / 2
                 : margemEsquerda + (ponto.Data - dataMinima).Days / (double)intervaloDias * areaLargura;
             var y = baseY - decimal.ToDouble(ponto.ValorAcumulado / valorMaximo) * areaAltura;
+            var point = new Point(x, y);
 
-            polyline.Points.Add(new Point(x, y));
+            polyline.Points.Add(point);
+            pontosRenderizados.Add((point, ponto.ValorAcumulado));
         }
 
         DashboardRecebidoLineCanvas.Children.Add(polyline);
 
-        foreach (var point in polyline.Points)
+        foreach (var (point, valorAcumulado) in pontosRenderizados)
         {
             var pontoMarcador = new Ellipse
             {
@@ -1430,6 +1503,14 @@ public partial class MainWindow : Window
             Canvas.SetLeft(pontoMarcador, point.X - 4);
             Canvas.SetTop(pontoMarcador, point.Y - 4);
             DashboardRecebidoLineCanvas.Children.Add(pontoMarcador);
+
+            AdicionarTextoCanvas(
+                DashboardRecebidoLineCanvas,
+                valorAcumulado.ToString("C0", RealCulture),
+                Math.Min(point.X + 8, largura - 82),
+                Math.Max(2, point.Y - 18),
+                11,
+                DashboardTextBrush);
         }
 
         AdicionarTextoCanvas(
@@ -1930,6 +2011,47 @@ public partial class MainWindow : Window
     private static string FormatarData(DateTime? data)
     {
         return data is null ? string.Empty : FormatarData(data.Value);
+    }
+
+    private void ExportarTabela<T>(
+        string nomeArquivoBase,
+        string nomeAba,
+        IReadOnlyList<T> linhas,
+        IReadOnlyList<XlsxColumn<T>> colunas)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = $"Exportar {nomeAba}",
+            Filter = "Planilha Excel (*.xlsx)|*.xlsx",
+            DefaultExt = ".xlsx",
+            AddExtension = true,
+            OverwritePrompt = true,
+            FileName = $"{nomeArquivoBase}_{DateTime.Now:yyyyMMdd_HHmm}.xlsx"
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            XlsxExporter.Export(dialog.FileName, nomeAba, colunas, linhas, RealCulture);
+            var mensagem = $"{linhas.Count:N0} registros exportados para XLSX.";
+            SetStatus(mensagem);
+            MessageBox.Show(mensagem, "Gestor Ambiental", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MostrarErro("Nao foi possivel exportar a tabela.", ex);
+        }
+    }
+
+    private static List<T> ObterItensVisiveis<T>(ICollectionView? view, IEnumerable<T> fallback)
+    {
+        return view is null
+            ? fallback.ToList()
+            : view.Cast<T>().ToList();
     }
 
     private string ObterNomesClientesDoProjeto(Projeto projeto)
