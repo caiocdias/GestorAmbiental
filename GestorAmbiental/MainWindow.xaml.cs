@@ -4,6 +4,8 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using GestorAmbiental.Domain.Display;
 using GestorAmbiental.Domain.Entities;
 using GestorAmbiental.Domain.Enums;
@@ -27,6 +29,13 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<Cliente> _pagamentoClientesDisponiveis = [];
     private static readonly Cliente SemClienteTarefa = new() { Id = 0, Nome = "Sem cliente" };
     private static readonly CultureInfo RealCulture = CultureInfo.GetCultureInfo("pt-BR");
+    private static readonly Brush DashboardLineBrush = new SolidColorBrush(Color.FromRgb(31, 111, 100));
+    private static readonly Brush DashboardGridBrush = new SolidColorBrush(Color.FromRgb(215, 226, 221));
+    private static readonly Brush DashboardTextBrush = new SolidColorBrush(Color.FromRgb(56, 81, 77));
+    private static readonly Brush DashboardNoPrazoBrush = new SolidColorBrush(Color.FromRgb(31, 111, 100));
+    private static readonly Brush DashboardVenceSeteBrush = new SolidColorBrush(Color.FromRgb(214, 166, 41));
+    private static readonly Brush DashboardVenceHojeBrush = new SolidColorBrush(Color.FromRgb(160, 68, 62));
+    private static readonly Brush DashboardFallbackBrush = new SolidColorBrush(Color.FromRgb(94, 112, 107));
     private ICollectionView? _clientesView;
     private ICollectionView? _projetosView;
     private ICollectionView? _tarefasView;
@@ -86,7 +95,6 @@ public partial class MainWindow : Window
         ProjetosDataGrid.ItemsSource = _projetosView;
         TarefasDataGrid.ItemsSource = _tarefasView;
         PagamentosDataGrid.ItemsSource = _pagamentosView;
-        DashboardProjetosDataGrid.ItemsSource = _projetos;
 
         ClienteProjetosListBox.ItemsSource = _projetos;
         ProjetoClientesListBox.ItemsSource = _clientes;
@@ -144,6 +152,23 @@ public partial class MainWindow : Window
         }
 
         await CarregarDadosAsync();
+    }
+
+    private void DashboardPeriodoPicker_SelectedDateChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        AtualizarDashboard();
+    }
+
+    private void LimparFiltroDashboardButton_Click(object sender, RoutedEventArgs e)
+    {
+        DashboardDataInicialPicker.SelectedDate = null;
+        DashboardDataFinalPicker.SelectedDate = null;
+        AtualizarDashboard();
+    }
+
+    private void DashboardChart_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        AtualizarDashboard();
     }
 
     private void DashboardNavButton_Click(object sender, RoutedEventArgs e)
@@ -621,7 +646,10 @@ public partial class MainWindow : Window
 
     private void ProjetoDataFinalPicker_SelectedDateChanged(object? sender, SelectionChangedEventArgs e)
     {
-        AtualizarOpcoesSituacaoProjetoPorDataFinal(ProjetoDataFinalPicker.SelectedDate is not null);
+        var possuiDataFinal = ProjetoDataFinalPicker.SelectedDate is not null;
+        AtualizarOpcoesSituacaoProjetoPorDataFinal(
+            definirConcluido: possuiDataFinal,
+            definirEmAndamentoSeConcluidoSemDataFinal: !possuiDataFinal);
     }
 
     private void TarefaProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -631,7 +659,10 @@ public partial class MainWindow : Window
 
     private void TarefaDataFinalPicker_SelectedDateChanged(object? sender, SelectionChangedEventArgs e)
     {
-        AtualizarOpcoesSituacaoTarefaPorDataFinal(TarefaDataFinalPicker.SelectedDate is not null);
+        var possuiDataFinal = TarefaDataFinalPicker.SelectedDate is not null;
+        AtualizarOpcoesSituacaoTarefaPorDataFinal(
+            definirConcluido: possuiDataFinal,
+            definirEmAndamentoSeConcluidoSemDataFinal: !possuiDataFinal);
     }
 
     private async void SalvarTarefaButton_Click(object sender, RoutedEventArgs e)
@@ -1157,16 +1188,453 @@ public partial class MainWindow : Window
 
     private void AtualizarDashboard()
     {
-        var valorContratado = _projetos.Sum(projeto => projeto.ValorContratado);
-        var valorRecebido = _pagamentos
-            .Where(pagamento => pagamento.Situacao is SituacaoPagamento.PAGO or SituacaoPagamento.PARCIAL)
-            .Sum(pagamento => pagamento.ValorTotal);
+        if (DashboardValorContratadoPeriodoTextBlock is null
+            || DashboardRecebidoLineCanvas is null
+            || DashboardProjetosPrazoPieCanvas is null
+            || DashboardTarefasPrazoPieCanvas is null)
+        {
+            return;
+        }
 
-        DashboardClientesTextBlock.Text = _clientes.Count.ToString("N0", CultureInfo.CurrentCulture);
-        DashboardProjetosTextBlock.Text = _projetos.Count.ToString("N0", CultureInfo.CurrentCulture);
-        DashboardContratadoTextBlock.Text = valorContratado.ToString("C", RealCulture);
-        DashboardRecebidoTextBlock.Text = valorRecebido.ToString("C", RealCulture);
+        var (dataInicial, dataFinal, periodoValido) = ObterPeriodoDashboard();
+        AtualizarResumoPeriodoDashboard(dataInicial, dataFinal, periodoValido);
+
+        var projetosNoPeriodo = periodoValido
+            ? _projetos.Where(projeto => EstaNoPeriodo(projeto.DataInicio, dataInicial, dataFinal)).ToList()
+            : new List<Projeto>();
+        var clientesNoPeriodo = periodoValido
+            ? _clientes.Where(cliente => EstaNoPeriodo(cliente.DataCadastro, dataInicial, dataFinal)).ToList()
+            : new List<Cliente>();
+        var pagamentosRecebidosNoPeriodo = periodoValido
+            ? _pagamentos
+                .Where(PagamentoContaComoRecebido)
+                .Where(pagamento => EstaNoPeriodo(pagamento.DataPagamento, dataInicial, dataFinal))
+                .ToList()
+            : new List<Pagamento>();
+        var projetosConcluidosNoPeriodo = periodoValido
+            ? _projetos.Count(projeto =>
+                projeto.Situacao == SituacaoProjeto.CONCLUIDO
+                && EstaNoPeriodo(projeto.DataFinal, dataInicial, dataFinal))
+            : 0;
+        var tarefasConcluidasNoPeriodo = periodoValido
+            ? _tarefas.Count(tarefa =>
+                tarefa.Situacao == SituacaoTarefa.CONCLUIDO
+                && EstaNoPeriodo(tarefa.DataFinal, dataInicial, dataFinal))
+            : 0;
+
+        DashboardValorContratadoPeriodoTextBlock.Text = projetosNoPeriodo
+            .Sum(projeto => projeto.ValorContratado)
+            .ToString("C", RealCulture);
+        DashboardValorRecebidoPeriodoTextBlock.Text = pagamentosRecebidosNoPeriodo
+            .Sum(pagamento => pagamento.ValorTotal)
+            .ToString("C", RealCulture);
+        DashboardValorPendenteTextBlock.Text = _projetos
+            .Sum(projeto => projeto.CalcularSaldoPendente())
+            .ToString("C", RealCulture);
+        DashboardClientesPeriodoTextBlock.Text = clientesNoPeriodo.Count.ToString("N0", CultureInfo.CurrentCulture);
+        DashboardProjetosConcluidosPeriodoTextBlock.Text = projetosConcluidosNoPeriodo.ToString("N0", CultureInfo.CurrentCulture);
+        DashboardTarefasConcluidasPeriodoTextBlock.Text = tarefasConcluidasNoPeriodo.ToString("N0", CultureInfo.CurrentCulture);
+
+        DesenharGraficoLinhaRecebido(pagamentosRecebidosNoPeriodo);
+        DesenharGraficoPizza(
+            DashboardProjetosPrazoPieCanvas,
+            DashboardProjetosPrazoLegendPanel,
+            CriarFatiasPrazo(_projetos
+                .Where(projeto => projeto.DataFinal is null
+                    && projeto.Situacao is not (SituacaoProjeto.CONCLUIDO or SituacaoProjeto.CANCELADO))
+                .Select(projeto => projeto.SituacaoPrazoDisplay)));
+        DesenharGraficoPizza(
+            DashboardTarefasPrazoPieCanvas,
+            DashboardTarefasPrazoLegendPanel,
+            CriarFatiasPrazo(_tarefas
+                .Where(tarefa => tarefa.DataFinal is null
+                    && tarefa.Situacao is not (SituacaoTarefa.CONCLUIDO or SituacaoTarefa.CANCELADO))
+                .Select(tarefa => tarefa.SituacaoPrazoDisplay)));
     }
+
+    private (DateTime? DataInicial, DateTime? DataFinal, bool Valido) ObterPeriodoDashboard()
+    {
+        var dataInicial = DashboardDataInicialPicker.SelectedDate?.Date;
+        var dataFinal = DashboardDataFinalPicker.SelectedDate?.Date;
+        var periodoValido = dataInicial is null || dataFinal is null || dataInicial <= dataFinal;
+
+        return (dataInicial, dataFinal, periodoValido);
+    }
+
+    private void AtualizarResumoPeriodoDashboard(DateTime? dataInicial, DateTime? dataFinal, bool periodoValido)
+    {
+        DashboardPeriodoResumoTextBlock.Foreground = periodoValido
+            ? DashboardTextBrush
+            : DashboardVenceHojeBrush;
+
+        if (!periodoValido)
+        {
+            DashboardPeriodoResumoTextBlock.Text = "Periodo invalido: a data inicial deve ser menor ou igual a data final.";
+        }
+        else if (dataInicial is null && dataFinal is null)
+        {
+            DashboardPeriodoResumoTextBlock.Text = "Todo o periodo disponivel";
+        }
+        else if (dataInicial is not null && dataFinal is null)
+        {
+            DashboardPeriodoResumoTextBlock.Text = $"A partir de {dataInicial:dd/MM/yyyy}";
+        }
+        else if (dataInicial is null && dataFinal is not null)
+        {
+            DashboardPeriodoResumoTextBlock.Text = $"Ate {dataFinal:dd/MM/yyyy}";
+        }
+        else
+        {
+            DashboardPeriodoResumoTextBlock.Text = $"{dataInicial:dd/MM/yyyy} ate {dataFinal:dd/MM/yyyy}";
+        }
+    }
+
+    private static bool EstaNoPeriodo(DateTime data, DateTime? dataInicial, DateTime? dataFinal)
+    {
+        var dataReferencia = data.Date;
+
+        return (dataInicial is null || dataReferencia >= dataInicial.Value)
+            && (dataFinal is null || dataReferencia <= dataFinal.Value);
+    }
+
+    private static bool EstaNoPeriodo(DateTime? data, DateTime? dataInicial, DateTime? dataFinal)
+    {
+        return data is not null && EstaNoPeriodo(data.Value, dataInicial, dataFinal);
+    }
+
+    private static bool PagamentoContaComoRecebido(Pagamento pagamento)
+    {
+        return pagamento.Situacao is SituacaoPagamento.PAGO or SituacaoPagamento.PARCIAL;
+    }
+
+    private void DesenharGraficoLinhaRecebido(IReadOnlyCollection<Pagamento> pagamentos)
+    {
+        DashboardRecebidoLineCanvas.Children.Clear();
+
+        var largura = Math.Max(DashboardRecebidoLineCanvas.ActualWidth, 360);
+        var altura = Math.Max(DashboardRecebidoLineCanvas.ActualHeight, 220);
+        const double margemEsquerda = 74;
+        const double margemDireita = 24;
+        const double margemSuperior = 20;
+        const double margemInferior = 44;
+        var areaLargura = largura - margemEsquerda - margemDireita;
+        var areaAltura = altura - margemSuperior - margemInferior;
+        var baseY = margemSuperior + areaAltura;
+
+        DesenharEixosLinha(DashboardRecebidoLineCanvas, margemEsquerda, margemSuperior, baseY, areaLargura, areaAltura);
+
+        var pontos = pagamentos
+            .GroupBy(pagamento => pagamento.DataPagamento.Date)
+            .OrderBy(grupo => grupo.Key)
+            .Select(grupo => new
+            {
+                Data = grupo.Key,
+                Valor = grupo.Sum(pagamento => pagamento.ValorTotal)
+            })
+            .ToList();
+
+        if (pontos.Count == 0)
+        {
+            AdicionarTextoCanvas(
+                DashboardRecebidoLineCanvas,
+                "Sem pagamentos no periodo",
+                largura / 2 - 82,
+                altura / 2 - 12,
+                14,
+                DashboardTextBrush);
+            return;
+        }
+
+        decimal acumulado = 0M;
+        var pontosAcumulados = pontos
+            .Select(ponto =>
+            {
+                acumulado += ponto.Valor;
+                return new
+                {
+                    ponto.Data,
+                    ValorAcumulado = acumulado
+                };
+            })
+            .ToList();
+        var dataMinima = pontosAcumulados.First().Data;
+        var dataMaxima = pontosAcumulados.Last().Data;
+        var valorMaximo = pontosAcumulados.Max(ponto => ponto.ValorAcumulado);
+        if (valorMaximo <= 0)
+        {
+            AdicionarTextoCanvas(
+                DashboardRecebidoLineCanvas,
+                "Sem pagamentos no periodo",
+                largura / 2 - 82,
+                altura / 2 - 12,
+                14,
+                DashboardTextBrush);
+            return;
+        }
+
+        var intervaloDias = Math.Max(1, (dataMaxima - dataMinima).Days);
+
+        for (var i = 0; i <= 4; i++)
+        {
+            var percentual = i / 4D;
+            var y = baseY - percentual * areaAltura;
+            var valor = valorMaximo * i / 4M;
+
+            DashboardRecebidoLineCanvas.Children.Add(new Line
+            {
+                X1 = margemEsquerda,
+                X2 = margemEsquerda + areaLargura,
+                Y1 = y,
+                Y2 = y,
+                Stroke = DashboardGridBrush,
+                StrokeThickness = 1
+            });
+            AdicionarTextoCanvas(
+                DashboardRecebidoLineCanvas,
+                valor.ToString("C0", RealCulture),
+                4,
+                y - 9,
+                11,
+                DashboardTextBrush);
+        }
+
+        var polyline = new Polyline
+        {
+            Stroke = DashboardLineBrush,
+            StrokeThickness = 3
+        };
+
+        foreach (var ponto in pontosAcumulados)
+        {
+            var x = dataMinima == dataMaxima
+                ? margemEsquerda + areaLargura / 2
+                : margemEsquerda + (ponto.Data - dataMinima).Days / (double)intervaloDias * areaLargura;
+            var y = baseY - decimal.ToDouble(ponto.ValorAcumulado / valorMaximo) * areaAltura;
+
+            polyline.Points.Add(new Point(x, y));
+        }
+
+        DashboardRecebidoLineCanvas.Children.Add(polyline);
+
+        foreach (var point in polyline.Points)
+        {
+            var pontoMarcador = new Ellipse
+            {
+                Width = 8,
+                Height = 8,
+                Fill = DashboardLineBrush,
+                Stroke = Brushes.White,
+                StrokeThickness = 1
+            };
+
+            Canvas.SetLeft(pontoMarcador, point.X - 4);
+            Canvas.SetTop(pontoMarcador, point.Y - 4);
+            DashboardRecebidoLineCanvas.Children.Add(pontoMarcador);
+        }
+
+        AdicionarTextoCanvas(
+            DashboardRecebidoLineCanvas,
+            dataMinima.ToString("dd/MM/yyyy", RealCulture),
+            margemEsquerda,
+            baseY + 12,
+            11,
+            DashboardTextBrush);
+        AdicionarTextoCanvas(
+            DashboardRecebidoLineCanvas,
+            dataMaxima.ToString("dd/MM/yyyy", RealCulture),
+            Math.Max(margemEsquerda, margemEsquerda + areaLargura - 72),
+            baseY + 12,
+            11,
+            DashboardTextBrush);
+    }
+
+    private static void DesenharEixosLinha(Canvas canvas, double margemEsquerda, double margemSuperior, double baseY, double areaLargura, double areaAltura)
+    {
+        canvas.Children.Add(new Line
+        {
+            X1 = margemEsquerda,
+            X2 = margemEsquerda,
+            Y1 = margemSuperior,
+            Y2 = baseY,
+            Stroke = DashboardGridBrush,
+            StrokeThickness = 1.2
+        });
+        canvas.Children.Add(new Line
+        {
+            X1 = margemEsquerda,
+            X2 = margemEsquerda + areaLargura,
+            Y1 = baseY,
+            Y2 = baseY,
+            Stroke = DashboardGridBrush,
+            StrokeThickness = 1.2
+        });
+    }
+
+    private static IReadOnlyList<DashboardPrazoSlice> CriarFatiasPrazo(IEnumerable<string> situacoesPrazo)
+    {
+        return situacoesPrazo
+            .GroupBy(situacao => situacao)
+            .Select(grupo => new
+            {
+                Nome = grupo.Key,
+                Quantidade = grupo.Count()
+            })
+            .OrderBy(item => ObterOrdemPrazoDashboard(item.Nome))
+            .ThenBy(item => item.Nome)
+            .Select(item => new DashboardPrazoSlice(
+                item.Nome,
+                item.Quantidade,
+                ObterCorPrazoDashboard(item.Nome)))
+            .ToList();
+    }
+
+    private static int ObterOrdemPrazoDashboard(string situacaoPrazo)
+    {
+        return situacaoPrazo switch
+        {
+            "Vence hoje" => 0,
+            "Vence em 7 dias" => 1,
+            "No prazo" => 2,
+            _ => 3
+        };
+    }
+
+    private static Brush ObterCorPrazoDashboard(string situacaoPrazo)
+    {
+        return situacaoPrazo switch
+        {
+            "Vence hoje" => DashboardVenceHojeBrush,
+            "Vence em 7 dias" => DashboardVenceSeteBrush,
+            "No prazo" => DashboardNoPrazoBrush,
+            _ => DashboardFallbackBrush
+        };
+    }
+
+    private static void DesenharGraficoPizza(Canvas canvas, Panel legenda, IReadOnlyList<DashboardPrazoSlice> fatias)
+    {
+        canvas.Children.Clear();
+        legenda.Children.Clear();
+
+        var largura = Math.Max(canvas.ActualWidth, canvas.Width);
+        var altura = Math.Max(canvas.ActualHeight, canvas.Height);
+        var diametro = Math.Max(120, Math.Min(largura, altura) - 12);
+        var raio = diametro / 2;
+        var centroX = largura / 2;
+        var centroY = altura / 2;
+        var total = fatias.Sum(fatia => fatia.Quantidade);
+
+        if (total == 0)
+        {
+            AdicionarTextoCanvas(canvas, "Sem dados", centroX - 34, centroY - 10, 14, DashboardTextBrush);
+            return;
+        }
+
+        if (fatias.Count == 1)
+        {
+            var fatiaUnica = fatias[0];
+            var ellipse = new Ellipse
+            {
+                Width = diametro,
+                Height = diametro,
+                Fill = fatiaUnica.Cor,
+                Stroke = Brushes.White,
+                StrokeThickness = 1
+            };
+            Canvas.SetLeft(ellipse, centroX - raio);
+            Canvas.SetTop(ellipse, centroY - raio);
+            canvas.Children.Add(ellipse);
+        }
+        else
+        {
+            var anguloInicial = -90D;
+
+            foreach (var fatia in fatias)
+            {
+                var anguloVarredura = fatia.Quantidade / (double)total * 360D;
+                canvas.Children.Add(CriarFatiaPizza(centroX, centroY, raio, anguloInicial, anguloVarredura, fatia.Cor));
+                anguloInicial += anguloVarredura;
+            }
+        }
+
+        foreach (var fatia in fatias)
+        {
+            var linhaLegenda = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Margin = new Thickness(0, 4, 0, 4)
+            };
+            linhaLegenda.Children.Add(new Border
+            {
+                Width = 13,
+                Height = 13,
+                Background = fatia.Cor,
+                CornerRadius = new CornerRadius(2),
+                Margin = new Thickness(0, 2, 8, 0)
+            });
+            linhaLegenda.Children.Add(new TextBlock
+            {
+                Text = $"{fatia.Nome}: {fatia.Quantidade:N0}",
+                Foreground = DashboardTextBrush,
+                FontSize = 13
+            });
+            legenda.Children.Add(linhaLegenda);
+        }
+    }
+
+    private static Path CriarFatiaPizza(double centroX, double centroY, double raio, double anguloInicial, double anguloVarredura, Brush cor)
+    {
+        var pontoInicial = ObterPontoNoCirculo(centroX, centroY, raio, anguloInicial);
+        var pontoFinal = ObterPontoNoCirculo(centroX, centroY, raio, anguloInicial + anguloVarredura);
+        var figura = new PathFigure
+        {
+            StartPoint = new Point(centroX, centroY),
+            IsClosed = true
+        };
+        figura.Segments.Add(new LineSegment(pontoInicial, true));
+        figura.Segments.Add(new ArcSegment(
+            pontoFinal,
+            new Size(raio, raio),
+            0,
+            anguloVarredura > 180,
+            SweepDirection.Clockwise,
+            true));
+
+        var geometria = new PathGeometry();
+        geometria.Figures.Add(figura);
+
+        return new Path
+        {
+            Data = geometria,
+            Fill = cor,
+            Stroke = Brushes.White,
+            StrokeThickness = 1
+        };
+    }
+
+    private static Point ObterPontoNoCirculo(double centroX, double centroY, double raio, double anguloGraus)
+    {
+        var anguloRadianos = Math.PI * anguloGraus / 180D;
+
+        return new Point(
+            centroX + raio * Math.Cos(anguloRadianos),
+            centroY + raio * Math.Sin(anguloRadianos));
+    }
+
+    private static void AdicionarTextoCanvas(Canvas canvas, string texto, double esquerda, double topo, double tamanhoFonte, Brush cor)
+    {
+        var textBlock = new TextBlock
+        {
+            Text = texto,
+            Foreground = cor,
+            FontSize = tamanhoFonte
+        };
+
+        Canvas.SetLeft(textBlock, esquerda);
+        Canvas.SetTop(textBlock, topo);
+        canvas.Children.Add(textBlock);
+    }
+
+    private sealed record DashboardPrazoSlice(string Nome, int Quantidade, Brush Cor);
 
     private void AtualizarPastaSelecionada()
     {
@@ -1187,8 +1655,18 @@ public partial class MainWindow : Window
 
         tela.Visibility = Visibility.Visible;
         PageTitleTextBlock.Text = titulo;
+        AtualizarMenuAtivo(tela);
         AtualizarVisualizacoes();
         SetStatus(string.Empty);
+    }
+
+    private void AtualizarMenuAtivo(UIElement tela)
+    {
+        DashboardNavButton.Tag = tela == DashboardView ? "Ativo" : null;
+        ClientesNavButton.Tag = tela == ClientesView ? "Ativo" : null;
+        ProjetosNavButton.Tag = tela == ProjetosView ? "Ativo" : null;
+        TarefasNavButton.Tag = tela == TarefasView ? "Ativo" : null;
+        PagamentosNavButton.Tag = tela == PagamentosView ? "Ativo" : null;
     }
 
     private void AtualizarVisualizacoes()
@@ -1204,7 +1682,6 @@ public partial class MainWindow : Window
         ProjetosDataGrid.Items.Refresh();
         TarefasDataGrid.Items.Refresh();
         PagamentosDataGrid.Items.Refresh();
-        DashboardProjetosDataGrid.Items.Refresh();
         AtualizarOpcoesClienteDaTarefa();
         AtualizarOpcoesPagamentoPorAssociacao();
         AtualizarDashboard();
@@ -1711,7 +2188,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AtualizarOpcoesSituacaoProjetoPorDataFinal(bool definirConcluido = false)
+    private void AtualizarOpcoesSituacaoProjetoPorDataFinal(
+        bool definirConcluido = false,
+        bool definirEmAndamentoSeConcluidoSemDataFinal = false)
     {
         var possuiDataFinal = ProjetoDataFinalPicker.SelectedDate is not null;
         var situacaoAtual = ObterValorEnum(ProjetoSituacaoComboBox, SituacaoProjeto.PLANEJADO);
@@ -1728,12 +2207,18 @@ public partial class MainWindow : Window
                 situacaoAtual = SituacaoProjeto.CONCLUIDO;
             }
         }
+        else if (definirEmAndamentoSeConcluidoSemDataFinal && situacaoAtual == SituacaoProjeto.CONCLUIDO)
+        {
+            situacaoAtual = SituacaoProjeto.EM_ANDAMENTO;
+        }
 
         ProjetoSituacaoComboBox.ItemsSource = opcoes;
         ProjetoSituacaoComboBox.SelectedValue = situacaoAtual;
     }
 
-    private void AtualizarOpcoesSituacaoTarefaPorDataFinal(bool definirConcluido = false)
+    private void AtualizarOpcoesSituacaoTarefaPorDataFinal(
+        bool definirConcluido = false,
+        bool definirEmAndamentoSeConcluidoSemDataFinal = false)
     {
         var possuiDataFinal = TarefaDataFinalPicker.SelectedDate is not null;
         var situacaoAtual = ObterValorEnum(TarefaSituacaoComboBox, SituacaoTarefa.PLANEJADO);
@@ -1749,6 +2234,10 @@ public partial class MainWindow : Window
             {
                 situacaoAtual = SituacaoTarefa.CONCLUIDO;
             }
+        }
+        else if (definirEmAndamentoSeConcluidoSemDataFinal && situacaoAtual == SituacaoTarefa.CONCLUIDO)
+        {
+            situacaoAtual = SituacaoTarefa.EM_ANDAMENTO;
         }
 
         TarefaSituacaoComboBox.ItemsSource = opcoes;

@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Gestor Ambiental"
+        Icon="Assets/Icon.ico"
         Language="pt-BR"
         Height="760"
         Width="1180"
@@ -18,6 +19,29 @@
             <Setter Property="Margin" Value="0,3" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#214F49" />
+                </Trigger>
+                <Trigger Property="Tag" Value="Ativo">
+                    <Setter Property="Background" Value="#2B6B61" />
+                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="PrimaryButtonStyle" TargetType="Button">
@@ -196,63 +220,171 @@
 
             <Grid Grid.Row="1">
                 <Grid x:Name="DashboardView">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,18">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                    <UniformGrid Grid.Row="0" Columns="4" Margin="0,0,0,18">
-                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,0">
-                            <StackPanel>
-                                <TextBlock Text="Clientes" Foreground="#5E706B" />
-                                <TextBlock x:Name="DashboardClientesTextBlock" Text="0" FontSize="30" FontWeight="Bold" Foreground="#183D3A" />
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,0">
-                            <StackPanel>
-                                <TextBlock Text="Projetos" Foreground="#5E706B" />
-                                <TextBlock x:Name="DashboardProjetosTextBlock" Text="0" FontSize="30" FontWeight="Bold" Foreground="#183D3A" />
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,0">
-                            <StackPanel>
-                                <TextBlock Text="Contratado" Foreground="#5E706B" />
-                                <TextBlock x:Name="DashboardContratadoTextBlock" Text="R$ 0,00" FontSize="26" FontWeight="Bold" Foreground="#183D3A" />
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource SectionBorderStyle}">
-                            <StackPanel>
-                                <TextBlock Text="Recebido" Foreground="#5E706B" />
-                                <TextBlock x:Name="DashboardRecebidoTextBlock" Text="R$ 0,00" FontSize="26" FontWeight="Bold" Foreground="#183D3A" />
-                            </StackPanel>
-                        </Border>
-                    </UniformGrid>
+                                    <StackPanel>
+                                        <TextBlock Text="Intervalo de analise"
+                                                   FontSize="18"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#183D3A" />
+                                        <TextBlock x:Name="DashboardPeriodoResumoTextBlock"
+                                                   Text="Todo o periodo disponivel"
+                                                   Foreground="#5E706B"
+                                                   Margin="0,6,0,0" />
+                                    </StackPanel>
 
-                    <Border Grid.Row="1" Style="{StaticResource SectionBorderStyle}">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Top"
-                                       Text="Projetos cadastrados"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Foreground="#183D3A"
-                                       Margin="0,0,0,12" />
-                            <DataGrid x:Name="DashboardProjetosDataGrid"
-                                      AutoGenerateColumns="False"
-                                      IsReadOnly="True"
-                                      CanUserAddRows="False"
-                                      HeadersVisibility="Column">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="2*" />
-                                    <DataGridTextColumn Header="Tipo" Binding="{Binding TipoAmbientalDisplay}" Width="2*" />
-                                    <DataGridTextColumn Header="Situacao" Binding="{Binding SituacaoDisplay}" Width="*" />
-                                    <DataGridTextColumn Header="Previsao fim" Binding="{Binding DataPrevistaFim, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
-                                    <DataGridTextColumn Header="Prazo" Binding="{Binding SituacaoPrazoDisplay}" Width="*" />
-                                    <DataGridTextColumn Header="Valor contratado" Binding="{Binding ValorContratado, StringFormat={}{0:C}}" Width="*" />
-                                    <DataGridTextColumn Header="Soma pagamentos" Binding="{Binding ValorPago, StringFormat={}{0:C}}" Width="*" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </DockPanel>
-                    </Border>
+                                    <StackPanel Grid.Column="1"
+                                                Orientation="Horizontal"
+                                                VerticalAlignment="Center">
+                                        <StackPanel Margin="0,0,10,0">
+                                            <TextBlock Text="Inicial" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                            <DatePicker x:Name="DashboardDataInicialPicker"
+                                                        Width="150"
+                                                        SelectedDateChanged="DashboardPeriodoPicker_SelectedDateChanged" />
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,10,0">
+                                            <TextBlock Text="Final" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                            <DatePicker x:Name="DashboardDataFinalPicker"
+                                                        Width="150"
+                                                        SelectedDateChanged="DashboardPeriodoPicker_SelectedDateChanged" />
+                                        </StackPanel>
+                                        <Button Content="Limpar"
+                                                Click="LimparFiltroDashboardButton_Click"
+                                                Style="{StaticResource SecondaryButtonStyle}"
+                                                VerticalAlignment="Bottom"
+                                                Margin="0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <UniformGrid Columns="3" Margin="0,0,0,18">
+                                <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Valor contratado no periodo" Foreground="#5E706B" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="DashboardValorContratadoPeriodoTextBlock" Text="R$ 0,00" FontSize="26" FontWeight="Bold" Foreground="#183D3A" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Valor recebido no periodo" Foreground="#5E706B" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="DashboardValorRecebidoPeriodoTextBlock" Text="R$ 0,00" FontSize="26" FontWeight="Bold" Foreground="#183D3A" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Valor pendente a receber" Foreground="#5E706B" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="DashboardValorPendenteTextBlock" Text="R$ 0,00" FontSize="26" FontWeight="Bold" Foreground="#183D3A" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Clientes cadastrados no periodo" Foreground="#5E706B" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="DashboardClientesPeriodoTextBlock" Text="0" FontSize="30" FontWeight="Bold" Foreground="#183D3A" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Projetos concluidos no periodo" Foreground="#5E706B" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="DashboardProjetosConcluidosPeriodoTextBlock" Text="0" FontSize="30" FontWeight="Bold" Foreground="#183D3A" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="Tarefas concluidas no periodo" Foreground="#5E706B" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="DashboardTarefasConcluidasPeriodoTextBlock" Text="0" FontSize="30" FontWeight="Bold" Foreground="#183D3A" />
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+
+                            <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,18">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="260" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Recebido acumulado"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="#183D3A"
+                                               Margin="0,0,0,12" />
+                                    <Canvas x:Name="DashboardRecebidoLineCanvas"
+                                            Grid.Row="1"
+                                            Background="#F8FBFA"
+                                            SizeChanged="DashboardChart_SizeChanged" />
+                                </Grid>
+                            </Border>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0" Style="{StaticResource SectionBorderStyle}" Margin="0,0,9,0">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Projetos por prazo"
+                                                   FontSize="18"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#183D3A"
+                                                   Margin="0,0,0,12" />
+                                        <Grid Grid.Row="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="260" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Canvas x:Name="DashboardProjetosPrazoPieCanvas"
+                                                    Width="240"
+                                                    Height="240"
+                                                    SizeChanged="DashboardChart_SizeChanged" />
+                                            <StackPanel x:Name="DashboardProjetosPrazoLegendPanel"
+                                                        Grid.Column="1"
+                                                        VerticalAlignment="Center"
+                                                        Margin="14,0,0,0" />
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+
+                                <Border Grid.Column="1" Style="{StaticResource SectionBorderStyle}" Margin="9,0,0,0">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Tarefas por prazo"
+                                                   FontSize="18"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#183D3A"
+                                                   Margin="0,0,0,12" />
+                                        <Grid Grid.Row="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="260" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Canvas x:Name="DashboardTarefasPrazoPieCanvas"
+                                                    Width="240"
+                                                    Height="240"
+                                                    SizeChanged="DashboardChart_SizeChanged" />
+                                            <StackPanel x:Name="DashboardTarefasPrazoLegendPanel"
+                                                        Grid.Column="1"
+                                                        VerticalAlignment="Center"
+                                                        Margin="14,0,0,0" />
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
                 </Grid>
 
                 <Grid x:Name="ClientesView" Visibility="Collapsed">
