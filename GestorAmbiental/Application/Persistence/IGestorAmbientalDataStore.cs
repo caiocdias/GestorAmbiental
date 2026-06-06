@@ -8,5 +8,7 @@ public interface IGestorAmbientalDataStore
 
     IRepository<Projeto> Projetos { get; }
 
+    IRepository<Tarefa> Tarefas { get; }
+
     IRepository<Pagamento> Pagamentos { get; }
 }

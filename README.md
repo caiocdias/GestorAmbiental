@@ -1,12 +1,13 @@
 # Gestor Ambiental
 
-Aplicativo desktop em WPF para gerenciar clientes, projetos ambientais e pagamentos. Os dados sao salvos em arquivos JSON dentro de uma pasta escolhida pelo usuario, sem banco de dados local ou servidor externo.
+Aplicativo desktop em WPF para gerenciar clientes, projetos ambientais, tarefas e pagamentos. Os dados sao salvos em arquivos JSON dentro de uma pasta escolhida pelo usuario, sem banco de dados local ou servidor externo.
 
 ## Funcionalidades
 
 - Cadastro, edicao, exclusao e filtros de clientes.
 - Cadastro, edicao, exclusao e filtros de projetos ambientais.
 - Associacao de varios clientes a um projeto e de varios projetos a um cliente.
+- Cadastro, edicao, exclusao e filtros de tarefas vinculadas a um projeto e, opcionalmente, a um cliente.
 - Lancamento, edicao, exclusao e filtros de pagamentos.
 - Restricao para impedir remover um cliente de um projeto quando ja existe pagamento vinculado ao par cliente/projeto.
 - Calculo de valores contratados, pagamentos recebidos e falta a receber.
@@ -45,6 +46,7 @@ A aplicacao cria arquivos JSON na pasta selecionada pelo usuario:
 
 - `clientes.json`
 - `projetos.json`
+- `tarefas.json`
 - `pagamentos.json`
 
 Esses arquivos sao dados reais do usuario e nao devem ser versionados no Git. A pasta de preferencia do aplicativo guarda apenas o caminho da ultima pasta usada.
@@ -66,12 +68,6 @@ GestorAmbiental/
   App.xaml
   MainWindow.xaml
 ```
-
-## Observacoes para publicacao
-
-- O repositorio nao deve incluir `.vs`, `bin`, `obj`, `build-check`, arquivos `*.user` ou dados JSON locais.
-- Antes de publicar no GitHub, escolha uma licenca adequada para o projeto, se quiser permitir uso, copia, modificacao ou distribuicao por terceiros.
-- O app nao contem chaves de API ou segredos. O ViaCEP e consumido por endpoint publico.
 
 ## Autor
 

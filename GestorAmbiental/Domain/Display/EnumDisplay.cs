@@ -35,6 +35,11 @@ public static class EnumDisplay
             SituacaoProjeto.CONCLUIDO => "Concluido",
             SituacaoProjeto.CANCELADO => "Cancelado",
 
+            SituacaoTarefa.PLANEJADO => "Planejado",
+            SituacaoTarefa.EM_ANDAMENTO => "Em andamento",
+            SituacaoTarefa.CONCLUIDO => "Concluido",
+            SituacaoTarefa.CANCELADO => "Cancelado",
+
             TipoProjetoAmbiental.LICENCIAMENTO_AMBIENTAL => "Licenciamento Ambiental",
             TipoProjetoAmbiental.CONSULTORIA_AMBIENTAL_MENSAL => "Consultoria Ambiental Mensal",
             TipoProjetoAmbiental.PROCESSO_DAIA_IEF => "Processo de DAIA IEF",

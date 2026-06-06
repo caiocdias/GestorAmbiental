@@ -113,6 +113,10 @@
                             Content="Projetos"
                             Click="ProjetosNavButton_Click"
                             Style="{StaticResource SidebarButtonStyle}" />
+                    <Button x:Name="TarefasNavButton"
+                            Content="Tarefas"
+                            Click="TarefasNavButton_Click"
+                            Style="{StaticResource SidebarButtonStyle}" />
                     <Button x:Name="PagamentosNavButton"
                             Content="Pagamentos"
                             Click="PagamentosNavButton_Click"
@@ -650,6 +654,126 @@
                                     <DataGridTextColumn Header="Falta receber" Binding="{Binding SaldoPendente, StringFormat={}{0:C}}" Width="1.1*" />
                                     <DataGridTextColumn Header="Clientes associados" Binding="{Binding ClientesAssociadosDisplay}" Width="1.8*" />
                                     <DataGridTextColumn Header="Cidade" Binding="{Binding Endereco.Cidade}" Width="1.2*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <Grid x:Name="TarefasView" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="390" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource SectionBorderStyle}" Margin="0,0,18,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock x:Name="TarefaFormTitleTextBlock"
+                                           Text="Cadastro de tarefa"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#183D3A" />
+                                <Border x:Name="TarefaEditWarningBorder"
+                                        Background="#FFF5D7"
+                                        BorderBrush="#D6A629"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10"
+                                        Margin="0,10,0,2"
+                                        Visibility="Collapsed">
+                                    <TextBlock Text="Editando tarefa. Ao salvar, as informacoes atuais serao sobrescritas."
+                                               Foreground="#6A4A00"
+                                               TextWrapping="Wrap" />
+                                </Border>
+
+                                <TextBlock Text="Projeto *" Style="{StaticResource FormLabelStyle}" />
+                                <ComboBox x:Name="TarefaProjetoComboBox"
+                                          DisplayMemberPath="Nome"
+                                          SelectionChanged="TarefaProjetoComboBox_SelectionChanged" />
+
+                                <TextBlock Text="Cliente" Style="{StaticResource FormLabelStyle}" />
+                                <ComboBox x:Name="TarefaClienteComboBox"
+                                          DisplayMemberPath="Nome" />
+
+                                <TextBlock Text="Situacao *" Style="{StaticResource FormLabelStyle}" />
+                                <ComboBox x:Name="TarefaSituacaoComboBox"
+                                          DisplayMemberPath="Display"
+                                          SelectedValuePath="Value" />
+
+                                <TextBlock Text="Inicio *" Style="{StaticResource FormLabelStyle}" />
+                                <DatePicker x:Name="TarefaDataInicioPicker" />
+
+                                <TextBlock Text="Previsao *" Style="{StaticResource FormLabelStyle}" />
+                                <DatePicker x:Name="TarefaDataPrevisaoPicker" />
+
+                                <TextBlock Text="Data final" Style="{StaticResource FormLabelStyle}" />
+                                <DatePicker x:Name="TarefaDataFinalPicker" />
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
+                                    <Button Content="Salvar" Click="SalvarTarefaButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                                    <Button Content="Limpar" Click="LimparTarefaButton_Click" Style="{StaticResource SecondaryButtonStyle}" />
+                                    <Button Content="Excluir" Click="ExcluirTarefaButton_Click" Style="{StaticResource DangerButtonStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource SectionBorderStyle}">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="Tarefas cadastradas"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#183D3A" />
+                                <WrapPanel Margin="0,12,0,0">
+                                    <StackPanel Width="170" Margin="0,0,8,8">
+                                        <TextBlock Text="Projeto" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="TarefaFiltroProjetoTextBox" TextChanged="TarefaFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="150" Margin="0,0,8,8">
+                                        <TextBlock Text="Cliente" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="TarefaFiltroClienteTextBox" TextChanged="TarefaFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="140" Margin="0,0,8,8">
+                                        <TextBlock Text="Situacao" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <ComboBox x:Name="TarefaFiltroSituacaoComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectionChanged="TarefaFiltro_SelectionChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="112" Margin="0,0,8,8">
+                                        <TextBlock Text="Inicio" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="TarefaFiltroInicioTextBox" TextChanged="TarefaFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="112" Margin="0,0,8,8">
+                                        <TextBlock Text="Previsao" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="TarefaFiltroPrevisaoTextBox" TextChanged="TarefaFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="112" Margin="0,0,8,8">
+                                        <TextBlock Text="Final" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="TarefaFiltroFinalTextBox" TextChanged="TarefaFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <Button Content="Limpar filtros"
+                                            Click="LimparFiltrosTarefasButton_Click"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            VerticalAlignment="Bottom"
+                                            Margin="0,0,0,8" />
+                                </WrapPanel>
+                            </StackPanel>
+                            <DataGrid x:Name="TarefasDataGrid"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      SelectionMode="Single"
+                                      SelectionChanged="TarefasDataGrid_SelectionChanged">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60" />
+                                    <DataGridTextColumn Header="Projeto" Binding="{Binding ProjetoDisplay}" Width="1.7*" />
+                                    <DataGridTextColumn Header="Cliente" Binding="{Binding ClienteDisplay}" Width="1.4*" />
+                                    <DataGridTextColumn Header="Situacao" Binding="{Binding SituacaoDisplay}" Width="1.1*" />
+                                    <DataGridTextColumn Header="Inicio" Binding="{Binding DataInicio, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
+                                    <DataGridTextColumn Header="Previsao" Binding="{Binding DataPrevisao, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
+                                    <DataGridTextColumn Header="Final" Binding="{Binding DataFinal, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
                                 </DataGrid.Columns>
                             </DataGrid>
                         </DockPanel>

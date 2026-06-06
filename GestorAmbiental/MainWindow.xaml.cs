@@ -20,21 +20,27 @@ public partial class MainWindow : Window
     private readonly ViaCepAddressLookup _viaCepAddressLookup = new();
     private readonly ObservableCollection<Cliente> _clientes = [];
     private readonly ObservableCollection<Projeto> _projetos = [];
+    private readonly ObservableCollection<Tarefa> _tarefas = [];
     private readonly ObservableCollection<Pagamento> _pagamentos = [];
+    private readonly ObservableCollection<Cliente> _tarefaClientesDisponiveis = [];
     private readonly ObservableCollection<Projeto> _pagamentoProjetosDisponiveis = [];
     private readonly ObservableCollection<Cliente> _pagamentoClientesDisponiveis = [];
+    private static readonly Cliente SemClienteTarefa = new() { Id = 0, Nome = "Sem cliente" };
     private static readonly CultureInfo RealCulture = CultureInfo.GetCultureInfo("pt-BR");
     private ICollectionView? _clientesView;
     private ICollectionView? _projetosView;
+    private ICollectionView? _tarefasView;
     private ICollectionView? _pagamentosView;
 
     private Cliente? _clienteSelecionado;
     private Projeto? _projetoSelecionado;
+    private Tarefa? _tarefaSelecionada;
     private Pagamento? _pagamentoSelecionado;
     private bool _aplicandoMascaraDocumento;
     private bool _aplicandoMascaraValorProjeto;
     private bool _aplicandoMascaraValorPagamento;
     private bool _aplicandoMascaraCepProjeto;
+    private bool _atualizandoOpcoesTarefa;
     private bool _atualizandoOpcoesPagamento;
 
     public MainWindow()
@@ -46,6 +52,7 @@ public partial class MainWindow : Window
         ConfigurarCombos();
         LimparFormularioCliente();
         LimparFormularioProjeto();
+        LimparFormularioTarefa();
         LimparFormularioPagamento();
     }
 
@@ -70,16 +77,21 @@ public partial class MainWindow : Window
         _clientesView.Filter = FiltrarCliente;
         _projetosView = CollectionViewSource.GetDefaultView(_projetos);
         _projetosView.Filter = FiltrarProjeto;
+        _tarefasView = CollectionViewSource.GetDefaultView(_tarefas);
+        _tarefasView.Filter = FiltrarTarefa;
         _pagamentosView = CollectionViewSource.GetDefaultView(_pagamentos);
         _pagamentosView.Filter = FiltrarPagamento;
 
         ClientesDataGrid.ItemsSource = _clientesView;
         ProjetosDataGrid.ItemsSource = _projetosView;
+        TarefasDataGrid.ItemsSource = _tarefasView;
         PagamentosDataGrid.ItemsSource = _pagamentosView;
         DashboardProjetosDataGrid.ItemsSource = _projetos;
 
         ClienteProjetosListBox.ItemsSource = _projetos;
         ProjetoClientesListBox.ItemsSource = _clientes;
+        TarefaProjetoComboBox.ItemsSource = _projetos;
+        TarefaClienteComboBox.ItemsSource = _tarefaClientesDisponiveis;
         PagamentoClienteComboBox.ItemsSource = _pagamentoClientesDisponiveis;
         PagamentoProjetoComboBox.ItemsSource = _pagamentoProjetosDisponiveis;
     }
@@ -96,6 +108,9 @@ public partial class MainWindow : Window
         ProjetoFiltroTipoComboBox.SelectedIndex = 0;
         ProjetoFiltroSituacaoComboBox.ItemsSource = EnumDisplay.GetFilterOptions<SituacaoProjeto>("Todas");
         ProjetoFiltroSituacaoComboBox.SelectedIndex = 0;
+        TarefaSituacaoComboBox.ItemsSource = EnumDisplay.GetOptions<SituacaoTarefa>();
+        TarefaFiltroSituacaoComboBox.ItemsSource = EnumDisplay.GetFilterOptions<SituacaoTarefa>("Todas");
+        TarefaFiltroSituacaoComboBox.SelectedIndex = 0;
         PagamentoFormaComboBox.ItemsSource = EnumDisplay.GetOptions<FormaPagamento>();
         PagamentoSituacaoComboBox.ItemsSource = EnumDisplay.GetOptions<SituacaoPagamento>();
         PagamentoFiltroFormaComboBox.ItemsSource = EnumDisplay.GetFilterOptions<FormaPagamento>("Todas");
@@ -146,6 +161,11 @@ public partial class MainWindow : Window
         MostrarTela(ProjetosView, "Projetos");
     }
 
+    private void TarefasNavButton_Click(object sender, RoutedEventArgs e)
+    {
+        MostrarTela(TarefasView, "Tarefas");
+    }
+
     private void PagamentosNavButton_Click(object sender, RoutedEventArgs e)
     {
         MostrarTela(PagamentosView, "Pagamentos");
@@ -164,19 +184,23 @@ public partial class MainWindow : Window
 
             var clientes = (await _dataStore.Clientes.ListarAsync()).ToList();
             var projetos = (await _dataStore.Projetos.ListarAsync()).ToList();
+            var tarefas = (await _dataStore.Tarefas.ListarAsync()).ToList();
             var pagamentos = (await _dataStore.Pagamentos.ListarAsync()).ToList();
 
             SincronizarPagamentosNosProjetos(projetos, pagamentos);
             SincronizarProjetosNosClientes(clientes, projetos);
             AtualizarDisplaysDeAssociacoes(clientes, projetos);
+            AtualizarDisplaysDeTarefas(tarefas, clientes, projetos);
             AtualizarDisplaysDePagamentos(pagamentos, clientes, projetos);
 
             TrocarItens(_clientes, clientes.OrderBy(cliente => cliente.Nome));
             TrocarItens(_projetos, projetos.OrderBy(projeto => projeto.Nome));
+            TrocarItens(_tarefas, tarefas.OrderBy(tarefa => tarefa.DataPrevisao).ThenBy(tarefa => tarefa.Id));
             TrocarItens(_pagamentos, pagamentos.OrderByDescending(pagamento => pagamento.DataPagamento));
             AtualizarVisualizacoes();
             LimparFormularioCliente();
             LimparFormularioProjeto();
+            LimparFormularioTarefa();
             LimparFormularioPagamento();
             SetStatus("Dados carregados.");
         }
@@ -579,6 +603,153 @@ public partial class MainWindow : Window
         AplicarMascaraCepProjeto();
     }
 
+    private void TarefaProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        AtualizarOpcoesClienteDaTarefa();
+    }
+
+    private async void SalvarTarefaButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_dataFolderProvider.DataFolderPath is null)
+        {
+            MostrarErroTarefa("Escolha uma pasta de dados antes de salvar a tarefa.");
+            return;
+        }
+
+        if (TarefaProjetoComboBox.SelectedItem is not Projeto projeto)
+        {
+            MostrarErroTarefa("Selecione o projeto da tarefa.");
+            return;
+        }
+
+        if (TarefaDataInicioPicker.SelectedDate is not DateTime dataInicio)
+        {
+            MostrarErroTarefa("Informe a data de inicio da tarefa.");
+            return;
+        }
+
+        if (TarefaDataPrevisaoPicker.SelectedDate is not DateTime dataPrevisao)
+        {
+            MostrarErroTarefa("Informe a data de previsao da tarefa.");
+            return;
+        }
+
+        if (dataPrevisao.Date < dataInicio.Date)
+        {
+            MostrarErroTarefa("A data de previsao nao pode ser anterior a data de inicio.");
+            return;
+        }
+
+        var dataFinal = TarefaDataFinalPicker.SelectedDate;
+
+        if (dataFinal is not null && dataFinal.Value.Date < dataInicio.Date)
+        {
+            MostrarErroTarefa("A data final nao pode ser anterior a data de inicio.");
+            return;
+        }
+
+        var clienteSelecionado = TarefaClienteComboBox.SelectedItem as Cliente;
+        int? clienteId = clienteSelecionado is null || clienteSelecionado.Id <= 0
+            ? null
+            : clienteSelecionado.Id;
+
+        if (clienteId is not null && !ProjetoTemCliente(projeto, clienteId.Value))
+        {
+            MostrarErroTarefa("O cliente selecionado precisa estar associado ao projeto da tarefa.");
+            return;
+        }
+
+        try
+        {
+            var editando = _tarefaSelecionada is not null;
+            var tarefa = _tarefaSelecionada ?? new Tarefa();
+            tarefa.ProjetoId = projeto.Id;
+            tarefa.ClienteId = clienteId;
+            tarefa.Situacao = ObterValorEnum(TarefaSituacaoComboBox, SituacaoTarefa.PLANEJADO);
+            tarefa.DataInicio = dataInicio.Date;
+            tarefa.DataPrevisao = dataPrevisao.Date;
+            tarefa.DataFinal = dataFinal?.Date;
+
+            await _dataStore.Tarefas.SalvarAsync(tarefa);
+            await CarregarDadosAsync();
+
+            var mensagem = editando
+                ? "Tarefa atualizada com sucesso."
+                : "Tarefa cadastrada com sucesso.";
+            LimparFormularioTarefa();
+            SetStatus(mensagem);
+            MessageBox.Show(mensagem, "Gestor Ambiental", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MostrarErro("Nao foi possivel salvar a tarefa.", ex);
+        }
+    }
+
+    private void LimparTarefaButton_Click(object sender, RoutedEventArgs e)
+    {
+        LimparFormularioTarefa();
+    }
+
+    private async void ExcluirTarefaButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TemPastaSelecionada() || _tarefaSelecionada is null)
+        {
+            SetStatus("Selecione uma tarefa para excluir.");
+            return;
+        }
+
+        if (MessageBox.Show("Excluir a tarefa selecionada?", "Confirmar exclusao", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            await _dataStore.Tarefas.ExcluirAsync(_tarefaSelecionada.Id);
+            await CarregarDadosAsync();
+            var mensagem = "Tarefa excluida com sucesso.";
+            SetStatus(mensagem);
+            MessageBox.Show(mensagem, "Gestor Ambiental", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MostrarErro("Nao foi possivel excluir a tarefa.", ex);
+        }
+    }
+
+    private void TarefasDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _tarefaSelecionada = TarefasDataGrid.SelectedItem as Tarefa;
+
+        if (_tarefaSelecionada is not null)
+        {
+            PreencherFormularioTarefa(_tarefaSelecionada);
+            SetStatus($"Editando tarefa #{_tarefaSelecionada.Id}. Ao salvar, as informacoes atuais serao sobrescritas.");
+        }
+    }
+
+    private void TarefaFiltro_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        _tarefasView?.Refresh();
+    }
+
+    private void TarefaFiltro_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _tarefasView?.Refresh();
+    }
+
+    private void LimparFiltrosTarefasButton_Click(object sender, RoutedEventArgs e)
+    {
+        TarefaFiltroProjetoTextBox.Text = string.Empty;
+        TarefaFiltroClienteTextBox.Text = string.Empty;
+        TarefaFiltroInicioTextBox.Text = string.Empty;
+        TarefaFiltroPrevisaoTextBox.Text = string.Empty;
+        TarefaFiltroFinalTextBox.Text = string.Empty;
+        TarefaFiltroSituacaoComboBox.SelectedIndex = 0;
+        _tarefasView?.Refresh();
+    }
+
     private void PagamentoProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         AtualizarOpcoesPagamentoPorAssociacao();
@@ -844,6 +1015,36 @@ public partial class MainWindow : Window
         ProjetoPaisTextBox.Text = paisPadrao;
     }
 
+    private void PreencherFormularioTarefa(Tarefa tarefa)
+    {
+        TarefaFormTitleTextBlock.Text = $"Editando tarefa #{tarefa.Id}";
+        TarefaEditWarningBorder.Visibility = Visibility.Visible;
+        TarefaProjetoComboBox.SelectedItem = _projetos.FirstOrDefault(projeto => projeto.Id == tarefa.ProjetoId);
+        AtualizarOpcoesClienteDaTarefa();
+        TarefaClienteComboBox.SelectedItem = tarefa.ClienteId is null
+            ? _tarefaClientesDisponiveis.FirstOrDefault(cliente => cliente.Id == 0)
+            : _tarefaClientesDisponiveis.FirstOrDefault(cliente => cliente.Id == tarefa.ClienteId.Value);
+        TarefaSituacaoComboBox.SelectedValue = tarefa.Situacao;
+        TarefaDataInicioPicker.SelectedDate = tarefa.DataInicio;
+        TarefaDataPrevisaoPicker.SelectedDate = tarefa.DataPrevisao;
+        TarefaDataFinalPicker.SelectedDate = tarefa.DataFinal;
+    }
+
+    private void LimparFormularioTarefa()
+    {
+        _tarefaSelecionada = null;
+        TarefasDataGrid.SelectedItem = null;
+        TarefaFormTitleTextBlock.Text = "Cadastro de tarefa";
+        TarefaEditWarningBorder.Visibility = Visibility.Collapsed;
+        TarefaProjetoComboBox.SelectedItem = null;
+        AtualizarOpcoesClienteDaTarefa();
+        TarefaClienteComboBox.SelectedItem = _tarefaClientesDisponiveis.FirstOrDefault(cliente => cliente.Id == 0);
+        TarefaSituacaoComboBox.SelectedValue = SituacaoTarefa.PLANEJADO;
+        TarefaDataInicioPicker.SelectedDate = DateTime.Today;
+        TarefaDataPrevisaoPicker.SelectedDate = DateTime.Today;
+        TarefaDataFinalPicker.SelectedDate = null;
+    }
+
     private void PreencherFormularioPagamento(Pagamento pagamento)
     {
         PagamentoFormTitleTextBlock.Text = $"Editando pagamento #{pagamento.Id}";
@@ -925,6 +1126,7 @@ public partial class MainWindow : Window
         DashboardView.Visibility = Visibility.Collapsed;
         ClientesView.Visibility = Visibility.Collapsed;
         ProjetosView.Visibility = Visibility.Collapsed;
+        TarefasView.Visibility = Visibility.Collapsed;
         PagamentosView.Visibility = Visibility.Collapsed;
 
         tela.Visibility = Visibility.Visible;
@@ -936,14 +1138,18 @@ public partial class MainWindow : Window
     private void AtualizarVisualizacoes()
     {
         AtualizarDisplaysDeAssociacoes(_clientes, _projetos);
+        AtualizarDisplaysDeTarefas(_tarefas, _clientes, _projetos);
         AtualizarDisplaysDePagamentos(_pagamentos, _clientes, _projetos);
         _clientesView?.Refresh();
         _projetosView?.Refresh();
+        _tarefasView?.Refresh();
         _pagamentosView?.Refresh();
         ClientesDataGrid.Items.Refresh();
         ProjetosDataGrid.Items.Refresh();
+        TarefasDataGrid.Items.Refresh();
         PagamentosDataGrid.Items.Refresh();
         DashboardProjetosDataGrid.Items.Refresh();
+        AtualizarOpcoesClienteDaTarefa();
         AtualizarOpcoesPagamentoPorAssociacao();
         AtualizarDashboard();
     }
@@ -1004,6 +1210,23 @@ public partial class MainWindow : Window
             && (situacaoFiltro is null || projeto.Situacao == situacaoFiltro)
             && Contem(clienteNome, ProjetoFiltroClienteTextBox.Text)
             && Contem(endereco, ProjetoFiltroEnderecoTextBox.Text);
+    }
+
+    private bool FiltrarTarefa(object item)
+    {
+        if (item is not Tarefa tarefa)
+        {
+            return false;
+        }
+
+        var situacaoFiltro = ObterValorFiltroEnum<SituacaoTarefa>(TarefaFiltroSituacaoComboBox);
+
+        return Contem(tarefa.ProjetoDisplay, TarefaFiltroProjetoTextBox.Text)
+            && Contem(tarefa.ClienteDisplay, TarefaFiltroClienteTextBox.Text)
+            && (situacaoFiltro is null || tarefa.Situacao == situacaoFiltro)
+            && Contem(FormatarData(tarefa.DataInicio), TarefaFiltroInicioTextBox.Text)
+            && Contem(FormatarData(tarefa.DataPrevisao), TarefaFiltroPrevisaoTextBox.Text)
+            && Contem(FormatarData(tarefa.DataFinal), TarefaFiltroFinalTextBox.Text);
     }
 
     private bool FiltrarPagamento(object item)
@@ -1163,6 +1386,16 @@ public partial class MainWindow : Window
     {
         return string.IsNullOrWhiteSpace(filtro)
             || valor.Contains(filtro.Trim(), StringComparison.CurrentCultureIgnoreCase);
+    }
+
+    private static string FormatarData(DateTime data)
+    {
+        return data.ToString("dd/MM/yyyy", RealCulture);
+    }
+
+    private static string FormatarData(DateTime? data)
+    {
+        return data is null ? string.Empty : FormatarData(data.Value);
     }
 
     private string ObterNomesClientesDoProjeto(Projeto projeto)
@@ -1421,6 +1654,47 @@ public partial class MainWindow : Window
         }
     }
 
+    private void AtualizarOpcoesClienteDaTarefa()
+    {
+        if (_atualizandoOpcoesTarefa)
+        {
+            return;
+        }
+
+        _atualizandoOpcoesTarefa = true;
+
+        try
+        {
+            var clienteSelecionado = TarefaClienteComboBox.SelectedItem as Cliente;
+            var projetoSelecionado = TarefaProjetoComboBox.SelectedItem as Projeto;
+            List<Cliente> clientesDisponiveis = projetoSelecionado is null
+                ? []
+                : _clientes
+                    .Where(cliente => ProjetoTemCliente(projetoSelecionado, cliente.Id))
+                    .OrderBy(cliente => cliente.Nome)
+                    .ToList();
+            var clientes = new List<Cliente> { SemClienteTarefa };
+            clientes.AddRange(clientesDisponiveis);
+
+            if (clienteSelecionado is not null
+                && clienteSelecionado.Id > 0
+                && clientes.All(cliente => cliente.Id != clienteSelecionado.Id))
+            {
+                clienteSelecionado = null;
+            }
+
+            TrocarItens(_tarefaClientesDisponiveis, clientes);
+
+            TarefaClienteComboBox.SelectedItem = clienteSelecionado is null || clienteSelecionado.Id <= 0
+                ? _tarefaClientesDisponiveis.FirstOrDefault(cliente => cliente.Id == 0)
+                : _tarefaClientesDisponiveis.FirstOrDefault(cliente => cliente.Id == clienteSelecionado.Id);
+        }
+        finally
+        {
+            _atualizandoOpcoesTarefa = false;
+        }
+    }
+
     private void AtualizarOpcoesPagamentoPorAssociacao()
     {
         if (_atualizandoOpcoesPagamento)
@@ -1574,6 +1848,26 @@ public partial class MainWindow : Window
         }
     }
 
+    private static void AtualizarDisplaysDeTarefas(
+        IEnumerable<Tarefa> tarefas,
+        IReadOnlyCollection<Cliente> clientes,
+        IReadOnlyCollection<Projeto> projetos)
+    {
+        var nomesClientes = clientes.ToDictionary(cliente => cliente.Id, cliente => cliente.Nome);
+        var nomesProjetos = projetos.ToDictionary(projeto => projeto.Id, projeto => projeto.Nome);
+
+        foreach (var tarefa in tarefas)
+        {
+            tarefa.ProjetoDisplay = nomesProjetos.TryGetValue(tarefa.ProjetoId, out var nomeProjeto)
+                ? nomeProjeto
+                : string.Empty;
+            tarefa.ClienteDisplay = tarefa.ClienteId is int clienteId
+                && nomesClientes.TryGetValue(clienteId, out var nomeCliente)
+                    ? nomeCliente
+                    : "Sem cliente";
+        }
+    }
+
     private static void AtualizarDisplaysDePagamentos(
         IEnumerable<Pagamento> pagamentos,
         IReadOnlyCollection<Cliente> clientes,
@@ -1680,6 +1974,13 @@ public partial class MainWindow : Window
     private void MostrarErroProjeto(string motivo)
     {
         var mensagem = $"Nao foi possivel salvar o projeto.\n\nMotivo: {motivo}";
+        SetStatus(motivo);
+        MessageBox.Show(mensagem, "Gestor Ambiental", MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+
+    private void MostrarErroTarefa(string motivo)
+    {
+        var mensagem = $"Nao foi possivel salvar a tarefa.\n\nMotivo: {motivo}";
         SetStatus(motivo);
         MessageBox.Show(mensagem, "Gestor Ambiental", MessageBoxButton.OK, MessageBoxImage.Error);
     }
