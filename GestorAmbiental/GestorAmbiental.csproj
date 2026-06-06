@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <Authors>Caio Cezar Dias</Authors>
+    <Description>Aplicativo WPF para gestao de clientes, projetos ambientais e pagamentos com persistencia em arquivos JSON.</Description>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+</Project>

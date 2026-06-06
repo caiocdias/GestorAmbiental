@@ -1,0 +1,44 @@
+# Build output
+bin/
+obj/
+build/
+build-check/
+publish/
+artifacts/
+
+# Visual Studio and local IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider/ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+# .NET generated files
+TestResults/
+*.nupkg
+*.snupkg
+*.coverage
+*.coveragexml
+coverage/
+
+# Logs and diagnostics
+*.log
+*.dmp
+*.mdmp
+
+# Local app data and sample datasets
+data/
+dados/
+*.local.json
+*.tmp
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store

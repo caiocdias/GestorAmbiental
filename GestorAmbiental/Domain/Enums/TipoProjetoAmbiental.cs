@@ -1,0 +1,30 @@
+namespace GestorAmbiental.Domain.Enums;
+
+public enum TipoProjetoAmbiental
+{
+    LICENCIAMENTO_AMBIENTAL,
+    CONSULTORIA_AMBIENTAL_MENSAL,
+    PROCESSO_DAIA_IEF,
+    CONSULTORIA_PSS_CAS_IEF,
+    OUTORGA_USO_AGUA,
+    CADASTRO_REGISTRO_IEF_IBAMA,
+    OUTROS,
+
+    [Obsolete("Use OUTROS.")]
+    RECUPERACAO_AREA_DEGRADADA = OUTROS,
+
+    [Obsolete("Use OUTROS.")]
+    MONITORAMENTO_AMBIENTAL = OUTROS,
+
+    [Obsolete("Use OUTROS.")]
+    GESTAO_RESIDUOS = OUTROS,
+
+    [Obsolete("Use OUTROS.")]
+    SANEAMENTO = OUTROS,
+
+    [Obsolete("Use CONSULTORIA_AMBIENTAL_MENSAL.")]
+    CONSULTORIA_AMBIENTAL = CONSULTORIA_AMBIENTAL_MENSAL,
+
+    [Obsolete("Use OUTROS.")]
+    OUTRO = OUTROS
+}

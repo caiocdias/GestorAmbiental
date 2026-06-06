@@ -1,0 +1,811 @@
+<Window x:Class="GestorAmbiental.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Gestor Ambiental"
+        Language="pt-BR"
+        Height="760"
+        Width="1180"
+        MinHeight="650"
+        MinWidth="1050"
+        Loaded="Window_Loaded">
+    <Window.Resources>
+        <Style x:Key="SidebarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#F7FAF8" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="18,12" />
+            <Setter Property="Margin" Value="0,3" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#1F6F64" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="MinWidth" Value="92" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Setter Property="Background" Value="#E6ECE9" />
+            <Setter Property="Foreground" Value="#163B38" />
+        </Style>
+
+        <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Setter Property="Background" Value="#A0443E" />
+        </Style>
+
+        <Style x:Key="SectionBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="18" />
+            <Setter Property="BorderBrush" Value="#D7E2DD" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style x:Key="FormLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#38514D" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,10,0,4" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="BorderBrush" Value="#B9C9C3" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="BorderBrush" Value="#B9C9C3" />
+        </Style>
+
+        <Style TargetType="DatePicker">
+            <Setter Property="Height" Value="32" />
+        </Style>
+
+        <Style x:Key="AssociationListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="4,3" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#E4F0ED" />
+                    <Setter Property="Foreground" Value="#163B38" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="#F3F7F5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Background="#173C38">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Top" Margin="20,24,20,10">
+                    <TextBlock Text="Gestor Ambiental"
+                               Foreground="White"
+                               FontSize="23"
+                               FontWeight="Bold" />
+                    <TextBlock Text="Projetos, clientes e pagamentos"
+                               Foreground="#B7D0C9"
+                               Margin="0,6,0,20"
+                               TextWrapping="Wrap" />
+
+                    <Button x:Name="DashboardNavButton"
+                            Content="Dashboard"
+                            Click="DashboardNavButton_Click"
+                            Style="{StaticResource SidebarButtonStyle}" />
+                    <Button x:Name="ClientesNavButton"
+                            Content="Clientes"
+                            Click="ClientesNavButton_Click"
+                            Style="{StaticResource SidebarButtonStyle}" />
+                    <Button x:Name="ProjetosNavButton"
+                            Content="Projetos"
+                            Click="ProjetosNavButton_Click"
+                            Style="{StaticResource SidebarButtonStyle}" />
+                    <Button x:Name="PagamentosNavButton"
+                            Content="Pagamentos"
+                            Click="PagamentosNavButton_Click"
+                            Style="{StaticResource SidebarButtonStyle}" />
+
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom" Margin="20">
+                    <Border Padding="14"
+                            CornerRadius="8"
+                            Background="#214F49"
+                            Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Pasta de dados"
+                                       Foreground="White"
+                                       FontWeight="SemiBold" />
+                            <TextBlock x:Name="SidebarFolderTextBlock"
+                                       Text="Nao selecionada"
+                                       Foreground="#DDEAE6"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,12" />
+                            <Button Content="Escolher pasta"
+                                    Click="ChooseFolderButton_Click"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="0" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="Desenvolvido por: Caio Cezar Dias"
+                               Foreground="#DDEAE6"
+                               FontSize="12"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="Contato: caiocd007@gmail.com"
+                               Foreground="#DDEAE6"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Style="{StaticResource SectionBorderStyle}"
+                    Margin="0,0,0,18">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Left">
+                        <TextBlock x:Name="PageTitleTextBlock"
+                                   Text="Dashboard"
+                                   FontSize="28"
+                                   FontWeight="Bold"
+                                   Foreground="#183D3A" />
+                        <TextBlock x:Name="DataFolderTextBlock"
+                                   Text="Escolha uma pasta para carregar e salvar os dados."
+                                   Foreground="#5E706B"
+                                   Margin="0,6,0,0" />
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Right"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                        <Button Content="Recarregar"
+                                Click="ReloadButton_Click"
+                                Style="{StaticResource SecondaryButtonStyle}" />
+                        <Button Content="Escolher pasta"
+                                Click="ChooseFolderButton_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Margin="0" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Row="1">
+                <Grid x:Name="DashboardView">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <UniformGrid Grid.Row="0" Columns="4" Margin="0,0,0,18">
+                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="Clientes" Foreground="#5E706B" />
+                                <TextBlock x:Name="DashboardClientesTextBlock" Text="0" FontSize="30" FontWeight="Bold" Foreground="#183D3A" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="Projetos" Foreground="#5E706B" />
+                                <TextBlock x:Name="DashboardProjetosTextBlock" Text="0" FontSize="30" FontWeight="Bold" Foreground="#183D3A" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="Contratado" Foreground="#5E706B" />
+                                <TextBlock x:Name="DashboardContratadoTextBlock" Text="R$ 0,00" FontSize="26" FontWeight="Bold" Foreground="#183D3A" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Recebido" Foreground="#5E706B" />
+                                <TextBlock x:Name="DashboardRecebidoTextBlock" Text="R$ 0,00" FontSize="26" FontWeight="Bold" Foreground="#183D3A" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <Border Grid.Row="1" Style="{StaticResource SectionBorderStyle}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top"
+                                       Text="Projetos cadastrados"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#183D3A"
+                                       Margin="0,0,0,12" />
+                            <DataGrid x:Name="DashboardProjetosDataGrid"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      HeadersVisibility="Column">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="2*" />
+                                    <DataGridTextColumn Header="Tipo" Binding="{Binding TipoAmbientalDisplay}" Width="2*" />
+                                    <DataGridTextColumn Header="Situacao" Binding="{Binding SituacaoDisplay}" Width="*" />
+                                    <DataGridTextColumn Header="Previsao fim" Binding="{Binding DataPrevistaFim, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
+                                    <DataGridTextColumn Header="Valor contratado" Binding="{Binding ValorContratado, StringFormat={}{0:C}}" Width="*" />
+                                    <DataGridTextColumn Header="Soma pagamentos" Binding="{Binding ValorPago, StringFormat={}{0:C}}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <Grid x:Name="ClientesView" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="380" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource SectionBorderStyle}" Margin="0,0,18,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock x:Name="ClienteFormTitleTextBlock"
+                                           Text="Cadastro de cliente"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#183D3A" />
+                                <Border x:Name="ClienteEditWarningBorder"
+                                        Background="#FFF5D7"
+                                        BorderBrush="#D6A629"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10"
+                                        Margin="0,10,0,2"
+                                        Visibility="Collapsed">
+                                    <TextBlock Text="Editando cliente. Ao salvar, as informacoes atuais serao sobrescritas."
+                                               Foreground="#6A4A00"
+                                               TextWrapping="Wrap" />
+                                </Border>
+
+                                <TextBlock Text="Nome *" Style="{StaticResource FormLabelStyle}" />
+                                <TextBox x:Name="ClienteNomeTextBox" />
+
+                                <TextBlock Text="Situacao *" Style="{StaticResource FormLabelStyle}" />
+                                <ComboBox x:Name="ClienteSituacaoComboBox"
+                                          DisplayMemberPath="Display"
+                                          SelectedValuePath="Value" />
+
+                                <TextBlock Text="Documento principal *" Style="{StaticResource FormLabelStyle}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox x:Name="ClienteDocumentoTipoComboBox"
+                                              Grid.Column="0"
+                                              Margin="0,0,8,0"
+                                              DisplayMemberPath="Display"
+                                              SelectedValuePath="Value"
+                                              SelectionChanged="ClienteDocumentoTipoComboBox_SelectionChanged" />
+                                    <TextBox x:Name="ClienteDocumentoTextBox"
+                                             Grid.Column="1"
+                                             TextChanged="ClienteDocumentoTextBox_TextChanged" />
+                                </Grid>
+
+                                <TextBlock Text="Email principal" Style="{StaticResource FormLabelStyle}" />
+                                <TextBox x:Name="ClienteEmailTextBox" />
+
+                                <TextBlock Text="Telefone principal" Style="{StaticResource FormLabelStyle}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="ClienteTelefoneDdiTextBox" Grid.Column="0" Text="55" Margin="0,0,8,0" />
+                                    <TextBox x:Name="ClienteTelefoneDddTextBox" Grid.Column="1" Margin="0,0,8,0" />
+                                    <TextBox x:Name="ClienteTelefoneNumeroTextBox" Grid.Column="2" />
+                                </Grid>
+
+                                <TextBlock Text="Projetos associados" Style="{StaticResource FormLabelStyle}" />
+                                <ListBox x:Name="ClienteProjetosListBox"
+                                         Height="104"
+                                         SelectionMode="Multiple"
+                                         ItemContainerStyle="{StaticResource AssociationListBoxItemStyle}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding Nome}"
+                                                      IsChecked="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected, Mode=TwoWay}"
+                                                      IsHitTestVisible="False" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
+                                    <Button Content="Salvar" Click="SalvarClienteButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                                    <Button Content="Limpar" Click="LimparClienteButton_Click" Style="{StaticResource SecondaryButtonStyle}" />
+                                    <Button Content="Excluir" Click="ExcluirClienteButton_Click" Style="{StaticResource DangerButtonStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource SectionBorderStyle}">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="Clientes cadastrados"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#183D3A" />
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1.6*" />
+                                        <ColumnDefinition Width="1.1*" />
+                                        <ColumnDefinition Width="1.3*" />
+                                        <ColumnDefinition Width="1.5*" />
+                                        <ColumnDefinition Width="1.3*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Nome" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ClienteFiltroNomeTextBox" TextChanged="ClienteFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                                        <TextBlock Text="Situacao" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <ComboBox x:Name="ClienteFiltroSituacaoComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectionChanged="ClienteFiltro_SelectionChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                                        <TextBlock Text="Documento" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ClienteFiltroDocumentoTextBox" TextChanged="ClienteFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3" Margin="0,0,8,0">
+                                        <TextBlock Text="Email" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ClienteFiltroEmailTextBox" TextChanged="ClienteFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4" Margin="0,0,8,0">
+                                        <TextBlock Text="Telefone" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ClienteFiltroTelefoneTextBox" TextChanged="ClienteFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <Button Grid.Column="5"
+                                            Content="Limpar filtros"
+                                            Click="LimparFiltrosClientesButton_Click"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            VerticalAlignment="Bottom"
+                                            Margin="0" />
+                                </Grid>
+                            </StackPanel>
+                            <DataGrid x:Name="ClientesDataGrid"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      SelectionMode="Single"
+                                      SelectionChanged="ClientesDataGrid_SelectionChanged">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60" />
+                                    <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="1.7*" />
+                                    <DataGridTextColumn Header="Situacao" Binding="{Binding SituacaoDisplay}" Width="*" />
+                                    <DataGridTextColumn Header="Tipo doc." Binding="{Binding TipoDocumentoPrincipalDisplay}" Width="*" />
+                                    <DataGridTextColumn Header="Documento" Binding="{Binding DocumentoPrincipalFormatado}" Width="1.3*" />
+                                    <DataGridTextColumn Header="Email" Binding="{Binding EmailPrincipalEndereco}" Width="1.7*" />
+                                    <DataGridTextColumn Header="Telefone" Binding="{Binding TelefonePrincipalFormatado}" Width="1.2*" />
+                                    <DataGridTextColumn Header="Projetos associados" Binding="{Binding ProjetosAssociadosDisplay}" Width="1.8*" />
+                                    <DataGridTextColumn Header="Cadastro" Binding="{Binding DataCadastro, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <Grid x:Name="ProjetosView" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="420" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource SectionBorderStyle}" Margin="0,0,18,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock x:Name="ProjetoFormTitleTextBlock"
+                                           Text="Cadastro de projeto"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#183D3A" />
+                                <Border x:Name="ProjetoEditWarningBorder"
+                                        Background="#FFF5D7"
+                                        BorderBrush="#D6A629"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10"
+                                        Margin="0,10,0,2"
+                                        Visibility="Collapsed">
+                                    <TextBlock Text="Editando projeto. Ao salvar, as informacoes atuais serao sobrescritas."
+                                               Foreground="#6A4A00"
+                                               TextWrapping="Wrap" />
+                                </Border>
+
+                                <TextBlock Text="Nome *" Style="{StaticResource FormLabelStyle}" />
+                                <TextBox x:Name="ProjetoNomeTextBox" />
+
+                                <TextBlock Text="Descricao" Style="{StaticResource FormLabelStyle}" />
+                                <TextBox x:Name="ProjetoDescricaoTextBox" Height="58" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Tipo ambiental *" Style="{StaticResource FormLabelStyle}" />
+                                        <ComboBox x:Name="ProjetoTipoComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectedValuePath="Value" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Situacao *" Style="{StaticResource FormLabelStyle}" />
+                                        <ComboBox x:Name="ProjetoSituacaoComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectedValuePath="Value" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="Clientes associados" Style="{StaticResource FormLabelStyle}" />
+                                <ListBox x:Name="ProjetoClientesListBox"
+                                         Height="104"
+                                         SelectionMode="Multiple"
+                                         ItemContainerStyle="{StaticResource AssociationListBoxItemStyle}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding Nome}"
+                                                      IsChecked="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected, Mode=TwoWay}"
+                                                      IsHitTestVisible="False" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Valor contratado (a receber) *" Style="{StaticResource FormLabelStyle}" />
+                                        <TextBox x:Name="ProjetoValorTextBox"
+                                                 TextChanged="ProjetoValorTextBox_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Area afetada m2 *" Style="{StaticResource FormLabelStyle}" />
+                                        <TextBox x:Name="ProjetoAreaTextBox" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Inicio *" Style="{StaticResource FormLabelStyle}" />
+                                        <DatePicker x:Name="ProjetoDataInicioPicker" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Previsao de fim" Style="{StaticResource FormLabelStyle}" />
+                                        <DatePicker x:Name="ProjetoDataPrevistaFimPicker" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="Impacto ambiental" Style="{StaticResource FormLabelStyle}" />
+                                <TextBox x:Name="ProjetoImpactoTextBox" Height="58" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+
+                                <TextBlock Text="Endereco do projeto" Style="{StaticResource FormLabelStyle}" Margin="0,16,0,4" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="110" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Logradouro" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ProjetoLogradouroTextBox" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Numero" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ProjetoNumeroEnderecoTextBox" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="190" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Bairro" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ProjetoBairroTextBox" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="CEP" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="ProjetoCepTextBox"
+                                                     Grid.Column="0"
+                                                     Margin="0,0,8,0"
+                                                     TextChanged="ProjetoCepTextBox_TextChanged" />
+                                            <Button Grid.Column="1"
+                                                    Content="Buscar"
+                                                    Click="BuscarCepProjetoButton_Click"
+                                                    Style="{StaticResource SecondaryButtonStyle}"
+                                                    MinWidth="72"
+                                                    Margin="0" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="100" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Cidade" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ProjetoCidadeTextBox" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                                        <TextBlock Text="UF" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ProjetoEstadoTextBox" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Pais" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ProjetoPaisTextBox" Text="Brasil" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
+                                    <Button Content="Salvar" Click="SalvarProjetoButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                                    <Button Content="Limpar" Click="LimparProjetoButton_Click" Style="{StaticResource SecondaryButtonStyle}" />
+                                    <Button Content="Excluir" Click="ExcluirProjetoButton_Click" Style="{StaticResource DangerButtonStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource SectionBorderStyle}">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="Projetos cadastrados"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#183D3A" />
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1.5*" />
+                                        <ColumnDefinition Width="1.5*" />
+                                        <ColumnDefinition Width="1.1*" />
+                                        <ColumnDefinition Width="1.2*" />
+                                        <ColumnDefinition Width="1.2*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Nome" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ProjetoFiltroNomeTextBox" TextChanged="ProjetoFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                                        <TextBlock Text="Tipo" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <ComboBox x:Name="ProjetoFiltroTipoComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectionChanged="ProjetoFiltro_SelectionChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                                        <TextBlock Text="Situacao" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <ComboBox x:Name="ProjetoFiltroSituacaoComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectionChanged="ProjetoFiltro_SelectionChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3" Margin="0,0,8,0">
+                                        <TextBlock Text="Cliente" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ProjetoFiltroClienteTextBox" TextChanged="ProjetoFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4" Margin="0,0,8,0">
+                                        <TextBlock Text="Endereco" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="ProjetoFiltroEnderecoTextBox" TextChanged="ProjetoFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <Button Grid.Column="5"
+                                            Content="Limpar filtros"
+                                            Click="LimparFiltrosProjetosButton_Click"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            VerticalAlignment="Bottom"
+                                            Margin="0" />
+                                </Grid>
+                            </StackPanel>
+                            <DataGrid x:Name="ProjetosDataGrid"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      SelectionMode="Single"
+                                      SelectionChanged="ProjetosDataGrid_SelectionChanged">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60" />
+                                    <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="1.8*" />
+                                    <DataGridTextColumn Header="Tipo" Binding="{Binding TipoAmbientalDisplay}" Width="1.7*" />
+                                    <DataGridTextColumn Header="Situacao" Binding="{Binding SituacaoDisplay}" Width="1.1*" />
+                                    <DataGridTextColumn Header="Previsao fim" Binding="{Binding DataPrevistaFim, StringFormat={}{0:dd/MM/yyyy}}" Width="1.1*" />
+                                    <DataGridTextColumn Header="Valor contratado" Binding="{Binding ValorContratado, StringFormat={}{0:C}}" Width="1.2*" />
+                                    <DataGridTextColumn Header="Soma pagamentos" Binding="{Binding ValorPago, StringFormat={}{0:C}}" Width="1.2*" />
+                                    <DataGridTextColumn Header="Falta receber" Binding="{Binding SaldoPendente, StringFormat={}{0:C}}" Width="1.1*" />
+                                    <DataGridTextColumn Header="Clientes associados" Binding="{Binding ClientesAssociadosDisplay}" Width="1.8*" />
+                                    <DataGridTextColumn Header="Cidade" Binding="{Binding Endereco.Cidade}" Width="1.2*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <Grid x:Name="PagamentosView" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="390" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource SectionBorderStyle}" Margin="0,0,18,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock x:Name="PagamentoFormTitleTextBlock"
+                                           Text="Lancamento de pagamento"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#183D3A" />
+                                <Border x:Name="PagamentoEditWarningBorder"
+                                        Background="#FFF5D7"
+                                        BorderBrush="#D6A629"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10"
+                                        Margin="0,10,0,2"
+                                        Visibility="Collapsed">
+                                    <TextBlock Text="Editando pagamento. Ao salvar, as informacoes atuais serao sobrescritas."
+                                               Foreground="#6A4A00"
+                                               TextWrapping="Wrap" />
+                                </Border>
+
+                                <TextBlock Text="Valor total *" Style="{StaticResource FormLabelStyle}" />
+                                <TextBox x:Name="PagamentoValorTextBox"
+                                         TextChanged="PagamentoValorTextBox_TextChanged" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                        <TextBlock Text="Forma *" Style="{StaticResource FormLabelStyle}" />
+                                        <ComboBox x:Name="PagamentoFormaComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectedValuePath="Value" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Situacao *" Style="{StaticResource FormLabelStyle}" />
+                                        <ComboBox x:Name="PagamentoSituacaoComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectedValuePath="Value" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="Data do pagamento *" Style="{StaticResource FormLabelStyle}" />
+                                <DatePicker x:Name="PagamentoDataPicker" />
+
+                                <TextBlock Text="Projeto associado * (ou cliente)" Style="{StaticResource FormLabelStyle}" />
+                                <ComboBox x:Name="PagamentoProjetoComboBox"
+                                          DisplayMemberPath="Nome"
+                                          SelectionChanged="PagamentoProjetoComboBox_SelectionChanged" />
+
+                                <TextBlock Text="Cliente associado * (ou projeto)" Style="{StaticResource FormLabelStyle}" />
+                                <ComboBox x:Name="PagamentoClienteComboBox"
+                                          DisplayMemberPath="Nome"
+                                          SelectionChanged="PagamentoClienteComboBox_SelectionChanged" />
+
+                                <TextBlock Text="Observacao" Style="{StaticResource FormLabelStyle}" />
+                                <TextBox x:Name="PagamentoObservacaoTextBox" Height="72" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
+                                    <Button Content="Salvar" Click="SalvarPagamentoButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                                    <Button Content="Limpar" Click="LimparPagamentoButton_Click" Style="{StaticResource SecondaryButtonStyle}" />
+                                    <Button Content="Excluir" Click="ExcluirPagamentoButton_Click" Style="{StaticResource DangerButtonStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource SectionBorderStyle}">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                                <TextBlock Text="Pagamentos lancados"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="#183D3A" />
+                                <WrapPanel Margin="0,12,0,0">
+                                    <StackPanel Width="112" Margin="0,0,8,8">
+                                        <TextBlock Text="Valor" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="PagamentoFiltroValorTextBox" TextChanged="PagamentoFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="130" Margin="0,0,8,8">
+                                        <TextBlock Text="Forma" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <ComboBox x:Name="PagamentoFiltroFormaComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectionChanged="PagamentoFiltro_SelectionChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="130" Margin="0,0,8,8">
+                                        <TextBlock Text="Situacao" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <ComboBox x:Name="PagamentoFiltroSituacaoComboBox"
+                                                  DisplayMemberPath="Display"
+                                                  SelectionChanged="PagamentoFiltro_SelectionChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="112" Margin="0,0,8,8">
+                                        <TextBlock Text="Data" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="PagamentoFiltroDataTextBox" TextChanged="PagamentoFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="140" Margin="0,0,8,8">
+                                        <TextBlock Text="Projeto" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="PagamentoFiltroProjetoTextBox" TextChanged="PagamentoFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="140" Margin="0,0,8,8">
+                                        <TextBlock Text="Cliente" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="PagamentoFiltroClienteTextBox" TextChanged="PagamentoFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <StackPanel Width="160" Margin="0,0,8,8">
+                                        <TextBlock Text="Observacao" Style="{StaticResource FormLabelStyle}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="PagamentoFiltroObservacaoTextBox" TextChanged="PagamentoFiltro_TextChanged" />
+                                    </StackPanel>
+                                    <Button Content="Limpar filtros"
+                                            Click="LimparFiltrosPagamentosButton_Click"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            VerticalAlignment="Bottom"
+                                            Margin="0,0,0,8" />
+                                </WrapPanel>
+                            </StackPanel>
+                            <DataGrid x:Name="PagamentosDataGrid"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      SelectionMode="Single"
+                                      SelectionChanged="PagamentosDataGrid_SelectionChanged">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60" />
+                                    <DataGridTextColumn Header="Valor" Binding="{Binding ValorTotal, StringFormat={}{0:C}}" Width="*" />
+                                    <DataGridTextColumn Header="Forma" Binding="{Binding FormaPagamentoDisplay}" Width="*" />
+                                    <DataGridTextColumn Header="Situacao" Binding="{Binding SituacaoDisplay}" Width="*" />
+                                    <DataGridTextColumn Header="Pagamento" Binding="{Binding DataPagamento, StringFormat={}{0:dd/MM/yyyy}}" Width="*" />
+                                    <DataGridTextColumn Header="Projeto" Binding="{Binding ProjetosAssociadosDisplay}" Width="1.4*" />
+                                    <DataGridTextColumn Header="Cliente" Binding="{Binding ClientesAssociadosDisplay}" Width="1.4*" />
+                                    <DataGridTextColumn Header="Observacao" Binding="{Binding Observacao}" Width="2*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <TextBlock x:Name="StatusMessageTextBlock"
+                           VerticalAlignment="Bottom"
+                           HorizontalAlignment="Left"
+                           Margin="6"
+                           Foreground="#38514D"
+                           FontWeight="SemiBold" />
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
